@@ -1,0 +1,26 @@
+{
+  "name": "artshop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Интернет-магазин авторских работ ручной работы",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @artshop/db generate",
+    "db:migrate": "pnpm --filter @artshop/db migrate",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "typescript": "^5.7.2"
+  }
+}
