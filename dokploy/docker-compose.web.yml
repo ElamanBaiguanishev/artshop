@@ -1,5 +1,5 @@
 # Dokploy-приложение artshop-web. Домен вешается на этот сервис через Traefik.
-# Порт: 4100.
+# Порт: 3000.
 
 services:
   web:
@@ -11,14 +11,14 @@ services:
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: ${WEB_PORT:-4100}
+      PORT: ${WEB_PORT:-3000}
       HOSTNAME: '0.0.0.0'
       # внутренний адрес API: обращения с сервера идут по сети докера,
       # минуя публичный домен
-      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://artshop-api:4101}
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://artshop-api:3001}
       REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     ports:
-      - '${WEB_PORT:-4100}:${WEB_PORT:-4100}'
+      - '${WEB_PORT:-3000}:${WEB_PORT:-3000}'
     labels:
       autoheal: 'true'
     healthcheck:
