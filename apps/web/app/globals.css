@@ -1,25 +1,52 @@
 @import 'tailwindcss';
 
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/layout.css';
+@import './tokens/base.css';
+
 /*
-  Временные токены-заглушки. Будут заменены на выданные дизайн-системой
-  (claude.ai/design) - см. docs/ui-brief.md.
-
-  Принцип: тёплый нейтральный фон, НЕ чисто белый - белый убивает картины.
-  Тёмной темы нет сознательно: она искажает восприятие цвета работ.
+  Пробрасываем токены дизайн-системы в Tailwind, чтобы работали утилиты
+  вида bg-background, text-muted-foreground, font-display, rounded-lg.
+  inline - потому что значения ссылаются на переменные из :root.
 */
-@theme {
-  --color-bg: #faf8f5;
-  --color-surface: #ffffff;
-  --color-text: #1c1917;
-  --color-muted: #78716c;
-  --color-border: #e7e2db;
-  --color-accent: #9a6b52;
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--fg-strong);
+  --color-body: var(--fg-body);
+  --color-muted: var(--bg-subtle);
+  --color-muted-foreground: var(--fg-muted);
+  --color-faint: var(--fg-faint);
+  --color-card: var(--surface-card);
+  --color-card-foreground: var(--fg-strong);
+  --color-popover: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--border);
+  --color-ring: var(--ring);
 
-  --radius-card: 0.5rem;
-}
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--primary-tint);
+  --color-accent-foreground: var(--primary);
 
-html,
-body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  --color-status-available: var(--status-available);
+  --color-status-sold: var(--status-sold);
+  --color-status-order: var(--status-order);
+  --color-destructive: var(--danger);
+  --color-success: var(--success);
+  --color-telegram: var(--telegram);
+
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-heading);
+  --font-display: var(--font-display);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-sheet: var(--shadow-sheet);
 }

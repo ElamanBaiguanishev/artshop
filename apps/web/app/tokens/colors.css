@@ -1,0 +1,68 @@
+/* ==========================================================================
+   COLORS — Алия
+   Источник: дизайн-система «Алия — Design System» (claude.ai/design).
+   Правки вносить там и переносить сюда, а не наоборот.
+
+   Только светлая тема. Тёплая нейтральная база, никогда не чистый белый:
+   белый убивает картины. Один приглушённый акцент (глина) - только действия.
+   Статусы тёплые и спокойные. Всё в OKLCH, одна светлотная семья.
+   ========================================================================== */
+:root {
+  /* --- база: тёплые нейтрали --- */
+  --bg-base:        oklch(0.967 0.008 74);   /* фон приложения — тёплая кость */
+  --bg-subtle:      oklch(0.945 0.011 72);   /* утопленные секции             */
+  --surface-card:   oklch(0.984 0.006 78);   /* карточки, плитки заказов      */
+  --surface-raised: oklch(0.992 0.004 80);   /* диалоги, тосты, поповеры      */
+
+  --fg-strong:  oklch(0.27 0.013 58);        /* заголовки, основной текст     */
+  --fg-body:    oklch(0.34 0.013 58);        /* текст                         */
+  --fg-muted:   oklch(0.53 0.014 60);        /* вторичное, подписи, цена      */
+  --fg-faint:   oklch(0.66 0.012 64);        /* плейсхолдеры, disabled        */
+
+  --border:        oklch(0.895 0.010 72);
+  --border-strong: oklch(0.83 0.012 70);
+  --border-focus:  oklch(0.565 0.083 42);
+
+  /* --- акцент (приглушённая глина) — ТОЛЬКО ДЕЙСТВИЯ --- */
+  --primary:        oklch(0.565 0.083 42);
+  --primary-hover:  oklch(0.515 0.085 41);
+  --primary-active: oklch(0.470 0.083 40);
+  --primary-fg:     oklch(0.985 0.006 80);
+  --primary-tint:   oklch(0.565 0.083 42 / 0.10);
+  --ring:           oklch(0.565 0.083 42 / 0.35);
+
+  /* --- статусы работ --- */
+  --status-available:     oklch(0.50 0.045 150);    /* приглушённый шалфей   */
+  --status-available-bg:  oklch(0.50 0.045 150 / 0.12);
+  --status-sold:          oklch(0.36 0.028 48);     /* эспрессо, «печать»    */
+  --status-sold-bg:       oklch(0.36 0.028 48 / 0.10);
+  --status-sold-fg:       oklch(0.985 0.006 80);
+  --status-order:         oklch(0.55 0.070 74);     /* приглушённая охра     */
+  --status-order-bg:      oklch(0.55 0.070 74 / 0.13);
+
+  /* --- обратная связь --- */
+  --danger:     oklch(0.52 0.130 27);
+  --danger-bg:  oklch(0.52 0.130 27 / 0.10);
+  --success:    oklch(0.52 0.080 150);
+
+  /* --- Telegram (кнопка связи) --- */
+  --telegram:   oklch(0.62 0.115 245);
+
+  /* ---------- семантические алиасы под shadcn ---------- */
+  --background:            var(--bg-base);
+  --foreground:            var(--fg-strong);
+  --card:                  var(--surface-card);
+  --card-foreground:       var(--fg-strong);
+  --popover:               var(--surface-raised);
+  --popover-foreground:    var(--fg-strong);
+  --primary-foreground:    var(--primary-fg);
+  --secondary:             var(--bg-subtle);
+  --secondary-foreground:  var(--fg-strong);
+  --muted:                 var(--bg-subtle);
+  --muted-foreground:      var(--fg-muted);
+  --accent:                var(--primary-tint);
+  --accent-foreground:     var(--primary);
+  --destructive:           var(--danger);
+  --destructive-foreground: var(--primary-fg);
+  --input:                 var(--border);
+}
