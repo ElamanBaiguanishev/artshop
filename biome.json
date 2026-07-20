@@ -11,6 +11,9 @@
     "lineWidth": 100
   },
   "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
     "formatter": {
       "quoteStyle": "single",
       "semicolons": "always",
@@ -23,7 +26,8 @@
       "recommended": true,
       "style": {
         "useNamingConvention": "off",
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "useImportType": "off"
       },
       "suspicious": {
         "noExplicitAny": "warn"

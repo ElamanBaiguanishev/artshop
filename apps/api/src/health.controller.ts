@@ -1,5 +1,5 @@
-import { Controller, Get } from '@nestjs/common';
 import type { HealthResponse } from '@artshop/shared';
+import { Controller, Get } from '@nestjs/common';
 
 @Controller()
 export class HealthController {
