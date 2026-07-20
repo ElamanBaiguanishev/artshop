@@ -1,8 +1,10 @@
 import type { HealthResponse } from '@artshop/shared';
 import { Controller, Get } from '@nestjs/common';
+import { Public } from './modules/auth/public.decorator';
 
 @Controller()
 export class HealthController {
+  @Public()
   @Get('health')
   health(): HealthResponse {
     return {

@@ -8,6 +8,7 @@ import { Controller, Get, Param, Query, Res } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ZodPipe } from '../../common/zod.pipe';
+import { Public } from '../auth/public.decorator';
 // НЕ import type: Nest внедряет сервис по значению в рантайме,
 // а import type стирается при компиляции и ломает DI.
 import { CatalogService } from './catalog.service';
@@ -16,6 +17,7 @@ import { CatalogService } from './catalog.service';
  * Публичная часть: авторизации нет, но действует общий rate limit
  * (ThrottlerGuard в AppModule) - ручки открыты миру.
  */
+@Public()
 @ApiTags('catalog')
 @Controller('catalog')
 export class CatalogController {

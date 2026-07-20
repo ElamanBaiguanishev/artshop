@@ -4,6 +4,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
+import { JwtAuthGuard } from './modules/auth/auth.guard';
+import { AuthModule } from './modules/auth/auth.module';
+import { RolesGuard } from './modules/auth/roles.decorator';
 import { CatalogModule } from './modules/catalog/catalog.module';
 
 @Module({
@@ -15,9 +18,16 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     // миру - лимит нужен с первого дня, иначе форму зафлудят боты.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     DbModule,
+    AuthModule,
     CatalogModule,
   ],
   controllers: [HealthController],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Закрыто по умолчанию: публичное помечается декоратором @Public().
+    // Забытый декоратор означает «недоступно», а не дыру в проде.
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}
