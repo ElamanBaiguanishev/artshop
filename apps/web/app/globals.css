@@ -1,9 +1,9 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@import './tokens/colors.css';
-@import './tokens/typography.css';
-@import './tokens/layout.css';
-@import './tokens/base.css';
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/layout.css";
+@import "./tokens/base.css";
 
 /*
   Пробрасываем токены дизайн-системы в Tailwind, чтобы работали утилиты

@@ -15,8 +15,8 @@ export default function HomePage() {
       <h1 className="text-[length:var(--text-4xl)]">Алия</h1>
 
       <p className="mt-6 max-w-[var(--container-read)] text-[length:var(--text-lg)] text-muted-foreground">
-        Токены дизайн-системы подключены. Витрина, каталог и админка появляются на этапе 1 —
-        см. docs/roadmap.md.
+        Токены дизайн-системы подключены. Витрина, каталог и админка появляются на этапе 1 — см.
+        docs/roadmap.md.
       </p>
 
       <div className="mt-16 flex flex-wrap gap-6">

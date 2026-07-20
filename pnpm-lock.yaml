@@ -148,6 +148,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.62.11
         version: 5.101.2(react@19.2.7)
+      blurhash:
+        specifier: ^2.0.5
+        version: 2.0.5
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
