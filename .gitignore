@@ -39,3 +39,11 @@ Thumbs.db
 /data/
 uploads/
 *.sqlite
+
+# next
+.next/
+next-env.d.ts
+
+# tsup / builds
+dist/
+.turbo/

@@ -3,9 +3,9 @@
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "rootDir": ".",
+    "rootDir": "./src",
     "outDir": "./dist",
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "tsup.config.ts", "drizzle.config.ts"]
+  "include": ["src/**/*.ts", "tsup.config.ts"]
 }

@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+/*
+  Временные токены-заглушки. Будут заменены на выданные дизайн-системой
+  (claude.ai/design) - см. docs/ui-brief.md.
+
+  Принцип: тёплый нейтральный фон, НЕ чисто белый - белый убивает картины.
+  Тёмной темы нет сознательно: она искажает восприятие цвета работ.
+*/
+@theme {
+  --color-bg: #faf8f5;
+  --color-surface: #ffffff;
+  --color-text: #1c1917;
+  --color-muted: #78716c;
+  --color-border: #e7e2db;
+  --color-accent: #9a6b52;
+
+  --radius-card: 0.5rem;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}

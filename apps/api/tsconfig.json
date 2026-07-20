@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // CommonJS: Nest построен на декораторах и reflect-metadata.
+    // Внутренние пакеты собираются в оба формата (см. packages/*/tsup.config.ts),
+    // поэтому отсюда подтягивается их CJS-сборка.
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
