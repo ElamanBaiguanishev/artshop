@@ -1,0 +1,42 @@
+# Dokploy-приложение artshop-web. Домен вешается на этот сервис через Traefik.
+# Порт: 4100.
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: ./dokploy/Dockerfile.web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${WEB_PORT:-4100}
+      HOSTNAME: '0.0.0.0'
+      # внутренний адрес API: обращения с сервера идут по сети докера,
+      # минуя публичный домен
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://artshop-api:4101}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    ports:
+      - '${WEB_PORT:-4100}:${WEB_PORT:-4100}'
+    labels:
+      autoheal: 'true'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const http=require(''http'');const port=process.env.PORT;const req=http.get({host:''127.0.0.1'',port,path:''/api/health'',timeout:3000},res=>process.exit(res.statusCode===200?0:1));req.on(''timeout'',()=>{req.destroy();process.exit(1)});req.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: always
+    networks:
+      dokploy-network:
+        aliases:
+          - artshop-web
+
+networks:
+  dokploy-network:
+    external: true

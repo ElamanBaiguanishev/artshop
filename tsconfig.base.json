@@ -3,8 +3,6 @@
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -14,5 +12,11 @@
     "declaration": true,
     "sourceMap": true,
     "resolveJsonModule": true
+
+    // module и moduleResolution намеренно НЕ заданы здесь.
+    // Внутренние пакеты (@artshop/shared, @artshop/db) не собираются - они отдают
+    // исходники .ts, и каждое приложение компилирует их своей сборкой под свой
+    // формат: api - CommonJS (Nest и декораторы), web и остальное - ESM.
+    // Это убирает весь класс проблем со смешиванием ESM и CJS в монорепо.
   }
 }

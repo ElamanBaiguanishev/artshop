@@ -1,0 +1,165 @@
+# Dokploy-приложение artshop-backend.
+# Три роли из одного образа: сборка одна, версия у всех общая.
+#
+# Postgres живёт ОТДЕЛЬНЫМ сервисом в Dokploy и сюда не входит:
+# пересборка приложения не должна трогать боевую базу.
+#
+# Порты: api 4101, chat-gateway 4103 (worker наружу не смотрит).
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: ./dokploy/Dockerfile.backend
+    image: artshop-backend:latest
+    command: ['node', 'apps/api/dist/main.js']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      API_PORT: ${API_PORT:-4101}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_BUCKET: ${S3_BUCKET:-artshop-media}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      # для ревалидации ISR-страниц после публикации работы
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+    ports:
+      - '${API_PORT:-4101}:${API_PORT:-4101}'
+    labels:
+      metrics.scrape: 'true'
+      metrics.port: '${API_PORT:-4101}'
+      metrics.env: '${METRICS_ENV:-prod}'
+      autoheal: 'true'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const http=require(''http'');const port=process.env.API_PORT;const req=http.get({host:''127.0.0.1'',port,path:''/health'',timeout:3000},res=>process.exit(res.statusCode===200?0:1));req.on(''timeout'',()=>{req.destroy();process.exit(1)});req.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      artshop-back: {}
+      dokploy-network:
+        aliases:
+          - artshop-api
+
+  worker:
+    image: artshop-backend:latest
+    command: ['node', 'apps/worker/dist/main.js']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_BUCKET: ${S3_BUCKET:-artshop-media}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+    labels:
+      autoheal: 'true'
+    restart: always
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      artshop-back: {}
+      dokploy-network:
+        aliases:
+          - artshop-worker
+
+  chat-gateway:
+    image: artshop-backend:latest
+    command: ['node', 'apps/chat-gateway/dist/main.js']
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      CHAT_GATEWAY_PORT: ${CHAT_GATEWAY_PORT:-4103}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_BUCKET: ${S3_BUCKET:-artshop-media}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
+      TELEGRAM_MODE: ${TELEGRAM_MODE:-webhook}
+      API_INTERNAL_URL: http://api:${API_PORT:-4101}
+    ports:
+      - '${CHAT_GATEWAY_PORT:-4103}:${CHAT_GATEWAY_PORT:-4103}'
+    labels:
+      metrics.scrape: 'true'
+      metrics.port: '${CHAT_GATEWAY_PORT:-4103}'
+      metrics.env: '${METRICS_ENV:-prod}'
+      autoheal: 'true'
+    restart: always
+    depends_on:
+      api:
+        condition: service_started
+    networks:
+      artshop-back: {}
+      dokploy-network:
+        aliases:
+          - artshop-chat-gateway
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: always
+    networks:
+      artshop-back: {}
+
+  # Хранилище изображений. Данные на диске VPS - ТРЕБУЕТ БЭКАПА.
+  # Переезд на внешнее S3 (R2 / Object Storage) = смена трёх переменных,
+  # код не меняется.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      artshop-back: {}
+      dokploy-network:
+        aliases:
+          - artshop-minio
+
+volumes:
+  redisdata:
+  miniodata:
+
+networks:
+  artshop-back:
+    driver: bridge
+  dokploy-network:
+    external: true
