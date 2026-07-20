@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -12,7 +11,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Глобального ValidationPipe нет намеренно: он тянет class-validator,
+  // а мы валидируем zod-схемами из @artshop/shared - теми же, что использует
+  // фронт. Контракт описан один раз (см. common/zod.pipe.ts).
 
   const config = new DocumentBuilder()
     .setTitle('Artshop API')

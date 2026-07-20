@@ -66,11 +66,22 @@ export const publicProductDetail = publicProductCard.extend({
 export type PublicProductCard = z.infer<typeof publicProductCard>;
 export type PublicProductDetail = z.infer<typeof publicProductDetail>;
 
+/**
+ * Булев параметр из query-строки.
+ *
+ * НЕ z.coerce.boolean(): он приводит любую непустую строку к true,
+ * то есть "false" превращается в true - тихо и незаметно.
+ */
+const queryBoolean = z.preprocess(
+  (v) => (typeof v === 'string' ? v === 'true' || v === '1' : v),
+  z.boolean(),
+);
+
 /** Параметры выдачи каталога. Подгрузка курсором, а не страницами. */
 export const catalogQuery = z.object({
   kind: z.enum(productKinds).optional(),
   /** Показывать ли проданные. По умолчанию да: они работают как соцдоказательство. */
-  includeSold: z.coerce.boolean().default(true),
+  includeSold: queryBoolean.default(true),
   limit: z.coerce.number().int().min(1).max(48).default(24),
   cursor: z.string().optional(),
 });
