@@ -4,10 +4,12 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
+import { AdminProductsModule } from './modules/admin-products/admin-products.module';
 import { JwtAuthGuard } from './modules/auth/auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesGuard } from './modules/auth/roles.decorator';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { MediaModule } from './modules/media/media.module';
 import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
@@ -20,8 +22,10 @@ import { OrdersModule } from './modules/orders/orders.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     DbModule,
     AuthModule,
+    MediaModule,
     CatalogModule,
     OrdersModule,
+    AdminProductsModule,
   ],
   controllers: [HealthController],
   providers: [

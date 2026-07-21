@@ -27,7 +27,8 @@ async function main() {
   if (!url) throw new Error('DATABASE_URL is required');
 
   const db = createDb(url);
-  const normalized = email!.toLowerCase();
+  // проверка на пустоту сделана выше, здесь значения гарантированно есть
+  const normalized = String(email).toLowerCase();
 
   const [existing] = await db
     .select({ id: adminUsers.id })
@@ -35,7 +36,7 @@ async function main() {
     .where(eq(adminUsers.email, normalized))
     .limit(1);
 
-  const passwordHash = await argon2.hash(password!);
+  const passwordHash = await argon2.hash(String(password));
 
   if (existing) {
     await db.update(adminUsers).set({ passwordHash }).where(eq(adminUsers.id, existing.id));

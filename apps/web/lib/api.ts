@@ -15,13 +15,19 @@ export async function fetchCatalog(params?: {
   if (params?.kind) query.set('kind', params.kind);
   if (params?.includeSold === false) query.set('includeSold', 'false');
 
-  const res = await fetch(`${BASE}/catalog?${query}`, {
-    // ISR: страница статична, но раз в минуту пересобирается; плюс
-    // ревалидация по событию из админки при публикации работы
-    next: { revalidate: 60, tags: ['catalog'] },
-  });
-  if (!res.ok) throw new Error(`Каталог недоступен: ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(`${BASE}/catalog?${query}`, {
+      // ISR: страница статична, но раз в минуту пересобирается; плюс
+      // ревалидация по событию из админки при публикации работы
+      next: { revalidate: 60, tags: ['catalog'] },
+    });
+    if (!res.ok) throw new Error(`Каталог недоступен: ${res.status}`);
+    return res.json();
+  } catch {
+    // API недоступен (например, во время сборки) - отдаём пустой каталог,
+    // страница соберётся и наполнится при следующей ревалидации
+    return { items: [], nextCursor: null };
+  }
 }
 
 export async function fetchWork(slug: string): Promise<PublicProductDetail | null> {

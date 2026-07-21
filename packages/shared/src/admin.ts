@@ -84,8 +84,58 @@ export type UploadUrlRequest = z.infer<typeof uploadUrlRequest>;
 export const uploadUrlResponse = z.object({
   imageId: z.string(),
   uploadUrl: z.string(),
-  /** Что вызвать после успешной заливки, чтобы началась обработка. */
-  completeUrl: z.string(),
+  /** Ключ оригинала в хранилище — передаётся обратно при подтверждении. */
+  storageKey: z.string(),
 });
 
 export type UploadUrlResponse = z.infer<typeof uploadUrlResponse>;
+
+/** Подтверждение: файл залит, можно ставить в обработку. */
+export const completeUploadRequest = z.object({
+  imageId: z.string().uuid(),
+});
+
+export type CompleteUploadRequest = z.infer<typeof completeUploadRequest>;
+
+// --- админское представление работы ---
+
+export const adminImage = z.object({
+  id: z.string(),
+  position: z.number(),
+  processingStatus: z.enum(['pending', 'processing', 'ready', 'failed']),
+  isInteriorShot: z.boolean(),
+  thumbUrl: z.string().nullable(),
+  blurhash: z.string().nullable(),
+});
+
+export const adminProductListItem = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  kind: z.enum(productKinds),
+  status: z.enum(productStatuses),
+  priceAmount: z.string().nullable(),
+  priceCurrency: z.string(),
+  coverThumbUrl: z.string().nullable(),
+  imagesCount: z.number(),
+  updatedAt: z.string(),
+});
+
+export type AdminProductListItem = z.infer<typeof adminProductListItem>;
+
+export const adminProductDetail = adminProductListItem.extend({
+  description: z.string().nullable(),
+  isUnique: z.boolean(),
+  priceOnRequest: z.boolean(),
+  widthMm: z.number().nullable(),
+  heightMm: z.number().nullable(),
+  depthMm: z.number().nullable(),
+  weightG: z.number().nullable(),
+  isFragile: z.boolean(),
+  customsCategory: z.enum(['original_art', 'souvenir']),
+  materials: z.array(z.string()).nullable(),
+  year: z.number().nullable(),
+  images: z.array(adminImage),
+});
+
+export type AdminProductDetail = z.infer<typeof adminProductDetail>;

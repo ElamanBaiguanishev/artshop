@@ -3,6 +3,7 @@ import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import pino from 'pino';
 import { startOutboxLoop } from './outbox.js';
+import { processImage } from './process-image.js';
 
 const log = pino({ name: 'worker' });
 
@@ -24,8 +25,10 @@ export const queues = {
 const mediaWorker = new Worker(
   'media',
   async (job) => {
-    log.info({ jobId: job.id, name: job.name }, 'media job received');
-    // TODO: ресайз, WebP/AVIF, водяной знак, blurhash
+    if (job.name === 'process-image') {
+      const { imageId, originalKey } = job.data as { imageId: string; originalKey: string };
+      await processImage(imageId, originalKey, log);
+    }
   },
   { connection, concurrency: 2 },
 );
