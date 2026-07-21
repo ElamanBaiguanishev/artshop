@@ -2,45 +2,37 @@ import { createServer } from 'node:http';
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import pino from 'pino';
+import { startOutboxLoop } from './outbox.js';
 
 const log = pino({ name: 'worker' });
+
+const databaseUrl = process.env.DATABASE_URL ?? 'postgres://artshop:artshop@localhost:5433/artshop';
 
 const connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6380', {
   maxRetriesPerRequest: null, // требование BullMQ
 });
 
 /**
- * Очереди этапа 1. Обработчики появляются вместе с соответствующими фичами -
- * см. docs/roadmap.md.
+ * Медиа-очередь на BullMQ: обработка изображений появится вместе с загрузкой
+ * фото в админке. Outbox же живёт в Postgres (см. outbox.ts) - задача ставится
+ * в одной транзакции с заказом, поэтому отдельный брокер ему не нужен.
  */
 export const queues = {
   media: new Queue('media', { connection }),
-  outbox: new Queue('outbox', { connection }),
 };
 
-const workers = [
-  new Worker(
-    'media',
-    async (job) => {
-      log.info({ jobId: job.id, name: job.name }, 'media job received');
-      // TODO этап 1: ресайз, WebP/AVIF, водяной знак, blurhash
-    },
-    { connection, concurrency: 2 },
-  ),
+const mediaWorker = new Worker(
+  'media',
+  async (job) => {
+    log.info({ jobId: job.id, name: job.name }, 'media job received');
+    // TODO: ресайз, WebP/AVIF, водяной знак, blurhash
+  },
+  { connection, concurrency: 2 },
+);
+mediaWorker.on('failed', (job, err) => log.error({ jobId: job?.id, err }, 'media job failed'));
 
-  new Worker(
-    'outbox',
-    async (job) => {
-      log.info({ jobId: job.id, name: job.name }, 'outbox job received');
-      // TODO этап 1: разбор outbox_events, отправка в Telegram
-    },
-    { connection, concurrency: 5 },
-  ),
-];
-
-for (const w of workers) {
-  w.on('failed', (job, err) => log.error({ jobId: job?.id, err }, 'job failed'));
-}
+// разбор outbox: уведомления о заказах и прочие внешние отправки
+const stopOutbox = startOutboxLoop(databaseUrl, log);
 
 // health для docker healthcheck и мониторинга
 createServer((req, res) => {
@@ -63,7 +55,8 @@ log.info('worker started');
 
 async function shutdown() {
   log.info('shutting down');
-  await Promise.all(workers.map((w) => w.close()));
+  stopOutbox();
+  await mediaWorker.close();
   await connection.quit();
   process.exit(0);
 }

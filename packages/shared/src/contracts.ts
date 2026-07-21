@@ -15,7 +15,8 @@ export const contactChannels = ['telegram', 'whatsapp', 'instagram', 'email', 'p
 
 /** Заявка с карточки работы. Полей намеренно мало: каждое лишнее снижает конверсию. */
 export const createOrderRequest = z.object({
-  productId: z.string().uuid().optional(),
+  // фронт знает работу по slug, не по uuid; для заявки «просто написать» может быть пусто
+  productSlug: z.string().max(120).optional(),
   customerName: z.string().min(1).max(120),
   contactChannel: z.enum(contactChannels),
   contactValue: z.string().min(3).max(200),
@@ -27,8 +28,11 @@ export type CreateOrderRequest = z.infer<typeof createOrderRequest>;
 
 export const createOrderResponse = z.object({
   orderNumber: z.string(),
+  /** Секретная ссылка на страницу статуса без регистрации. */
   statusUrl: z.string(),
   telegramDeepLink: z.string().optional(),
+  /** true, если работа уникальна и уже занята другой заявкой. */
+  alreadyReserved: z.boolean().default(false),
 });
 
 export type CreateOrderResponse = z.infer<typeof createOrderResponse>;

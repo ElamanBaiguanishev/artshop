@@ -8,6 +8,7 @@ import { JwtAuthGuard } from './modules/auth/auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesGuard } from './modules/auth/roles.decorator';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
     DbModule,
     AuthModule,
     CatalogModule,
+    OrdersModule,
   ],
   controllers: [HealthController],
   providers: [

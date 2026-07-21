@@ -10,6 +10,9 @@ import { telegramLink } from './telegram-button';
 export function RequestForm({ workSlug, workTitle }: { workSlug: string; workTitle: string }) {
   const [open, setOpen] = useState(false);
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [comment, setComment] = useState('');
@@ -17,8 +20,30 @@ export function RequestForm({ workSlug, workTitle }: { workSlug: string; workTit
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    // отправка появится вместе с ручкой заказов; сейчас показываем результат
-    setSent(true);
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          productSlug: workSlug,
+          customerName: name,
+          contactChannel: channel,
+          contactValue: contact,
+          comment: comment || undefined,
+          source: 'site',
+        }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      const data = await res.json();
+      setOrderNumber(data.orderNumber);
+      setSent(true);
+    } catch {
+      setError('Не удалось отправить. Напишите напрямую в Telegram — так точно дойдёт.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!open) {
@@ -38,7 +63,7 @@ export function RequestForm({ workSlug, workTitle }: { workSlug: string; workTit
     return (
       <div className="rounded-[var(--radius-lg)] border border-border p-5">
         <p style={{ fontFamily: 'var(--font-serif)' }} className="text-[length:var(--text-lg)]">
-          Заявка отправлена
+          Заявка {orderNumber} отправлена
         </p>
         <p className="mt-2 text-[length:var(--text-sm)] text-muted-foreground">
           Алия свяжется с вами и расскажет про доставку. Обычно отвечает в течение дня.
@@ -106,13 +131,20 @@ export function RequestForm({ workSlug, workTitle }: { workSlug: string; workTit
         />
       </div>
 
+      {error && (
+        <p className="mt-3 text-[length:var(--text-sm)]" style={{ color: 'var(--danger)' }}>
+          {error}
+        </p>
+      )}
+
       <div className="mt-4 flex gap-3">
         <button
           type="submit"
-          className="min-h-[var(--tap-min)] flex-1 rounded-[var(--radius-md)] text-[length:var(--text-sm)]"
+          disabled={busy}
+          className="min-h-[var(--tap-min)] flex-1 rounded-[var(--radius-md)] text-[length:var(--text-sm)] disabled:opacity-60"
           style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
         >
-          Отправить заявку
+          {busy ? 'Отправляем…' : 'Отправить заявку'}
         </button>
         <button
           type="button"

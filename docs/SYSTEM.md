@@ -1,0 +1,261 @@
+# Как устроен artshop
+
+Живой документ: обновляется по мере появления функционала. Для ревью по схемам,
+а не по коду. Технические обоснования решений — в [architecture.md](architecture.md).
+
+Отметки готовности: ✅ сделано и проверено · 🟡 частично · ⬜ впереди.
+
+---
+
+## Сервисы и как они связаны
+
+```mermaid
+flowchart TB
+    subgraph browser[Браузер]
+        U[Покупатель]
+        A[Админ / Алия]
+    end
+
+    subgraph web[web · Next.js ✅]
+        SHOP[Витрина ✅]
+        ADMIN[Админка ⬜]
+        PROXY[api-прокси ✅]
+    end
+
+    API[api · NestJS ✅]
+    WORKER[worker ✅]
+    CG[chat-gateway ⬜]
+
+    PG[(PostgreSQL ✅)]
+    REDIS[(Redis ✅)]
+    S3[(MinIO / S3 ✅)]
+    TG[Telegram ⬜]
+
+    U --> SHOP
+    A --> ADMIN
+    SHOP --> PROXY --> API
+    ADMIN --> API
+
+    API --> PG
+    API --> REDIS
+    API --> S3
+
+    WORKER -->|разбор outbox ✅| PG
+    WORKER -->|обработка фото ⬜| S3
+    WORKER -->|уведомления ⬜| TG
+    CG <-->|сообщения ⬜| API
+    CG <--> TG
+```
+
+Кто за что отвечает:
+
+| Сервис | Делает | Статус |
+|---|---|---|
+| `web` | витрина, админка, прокси к API | витрина ✅, админка ⬜ |
+| `api` | каталог, заказы, авторизация — владеет БД | ✅ |
+| `worker` | разбор outbox, обработка фото, расписания | outbox ✅, фото ⬜ |
+| `chat-gateway` | мессенджеры: вебхуки, отправка | ⬜ |
+
+---
+
+## Таблицы базы
+
+```mermaid
+erDiagram
+    products ||--o{ product_images : "фото работы"
+    products ||--o{ product_slug_history : "старые адреса"
+    orders ||--o{ order_items : "состав заказа"
+    orders ||--o{ order_events : "история статусов"
+    products ||--o{ order_items : "снимок товара"
+    products ||--o| orders : "резерв (reserved_by_order_id)"
+
+    products {
+        uuid id PK
+        text slug UK "адрес работы, транслит"
+        enum kind "painting/keychain/decor"
+        enum status "draft/available/reserved/sold/archived"
+        bool is_unique "работа в одном экземпляре"
+        bigint price_amount "в минорных единицах"
+        timestamptz reserved_until "докуда держится бронь"
+        uuid reserved_by_order_id "какой заказ занял"
+    }
+    product_images {
+        uuid id PK
+        uuid product_id FK
+        int position "порядок в галерее"
+        jsonb variants "thumb/card/full + размеры"
+        text blurhash "заглушка на время загрузки"
+        bool is_interior_shot "кадр в интерьере"
+        enum processing_status "pending/processing/ready/failed"
+    }
+    orders {
+        uuid id PK
+        text number UK "человекочитаемый A-1000"
+        text public_token UK "секрет для страницы статуса"
+        enum type "catalog/custom"
+        enum status "new..delivered/cancelled"
+        text customer_name
+        enum contact_channel
+        text contact_value
+        bool is_manual "заведён вручную по разговору вне сайта"
+    }
+    order_items {
+        uuid id PK
+        uuid order_id FK
+        uuid product_id FK "nullable для custom"
+        text title_snapshot "снимок: товар мог измениться"
+        bigint price_snapshot
+    }
+    order_events {
+        uuid id PK
+        uuid order_id FK
+        enum from_status
+        enum to_status
+        text actor "customer/admin/system"
+    }
+    outbox_events {
+        uuid id PK
+        text topic "order.created ..."
+        jsonb payload
+        text dedup_key UK "защита от дублей"
+        enum status "pending/sent/failed"
+        int attempts
+        timestamptz next_retry_at
+    }
+    admin_users {
+        uuid id PK
+        text email UK
+        text password_hash "argon2"
+        enum role "owner/manager"
+    }
+```
+
+Три сквозных правила модели:
+
+- **деньги** — всегда целое число в минорных единицах (тиын/копейка) + код валюты, никогда не дробью;
+- **ничего не удаляется** — проданное и отменённое остаётся, работает статус;
+- **снимки в заказе** — название и цена копируются в `order_items`, потому что товар потом может измениться или уйти в архив.
+
+---
+
+## Поток: покупатель оставляет заявку ✅
+
+Готово и проверено. Ключевой момент — резерв уникальной работы и защита от гонки.
+
+```mermaid
+sequenceDiagram
+    participant U as Покупатель
+    participant W as web
+    participant API as api
+    participant PG as PostgreSQL
+    participant WK as worker
+    participant TG as Telegram
+
+    U->>W: заполняет форму заявки
+    W->>API: POST /orders
+    Note over API,PG: одна транзакция — либо всё, либо ничего
+
+    rect rgb(245, 238, 230)
+        API->>PG: UPDATE products SET reserved<br/>WHERE status = available
+        alt работа была свободна
+            PG-->>API: 1 строка → бронь взята
+        else кто-то успел раньше
+            PG-->>API: 0 строк → alreadyReserved
+        end
+        API->>PG: INSERT order + order_items (снимок)
+        API->>PG: INSERT order_events (new)
+        API->>PG: INSERT outbox (order.created)
+    end
+
+    API-->>W: номер A-1000 + ссылка на статус
+    W-->>U: «Заявка отправлена»
+
+    Note over WK,PG: отдельно, асинхронно
+    WK->>PG: выбирает pending из outbox
+    WK->>TG: уведомление Алие
+    WK->>PG: помечает sent
+```
+
+Почему именно так:
+
+- **резерв условным UPDATE, а не блокировкой.** `WHERE status = 'available'` уже
+  атомарен: два одновременных запроса не могут оба его пройти. Отдельная
+  распределённая блокировка тут была бы лишней. Проверено: вторая заявка на ту же
+  работу получает `alreadyReserved`, а не вторую бронь.
+- **outbox в той же транзакции.** Уведомление пишется в БД вместе с заказом.
+  Упади процесс сразу после — заявка не потеряется, воркер разберёт outbox позже.
+  Отправка отделена от приёма: покупатель не ждёт, пока достучимся до Telegram.
+- **ретраи.** Не доставили — пробуем через 1, 2, 4… минуты, до 6 раз, потом `failed`.
+
+> Сейчас у воркера нет токена бота, поэтому уведомление пишется в лог, а не в
+> Telegram. Подключение — вместе с chat-gateway.
+
+---
+
+## Поток: обработка фотографии 🟡
+
+Модель и очередь готовы, обработчик — впереди (появится с загрузкой в админке).
+
+```mermaid
+sequenceDiagram
+    participant A as Админка ⬜
+    participant API as api
+    participant S3 as MinIO
+    participant Q as Redis / BullMQ ✅
+    participant WK as worker ⬜
+
+    A->>API: запрос на загрузку
+    API->>S3: presigned URL
+    API-->>A: ссылка для прямой заливки
+    A->>S3: заливает оригинал напрямую (мимо API)
+    A->>API: файл на месте
+    API->>Q: задача обработки
+    WK->>S3: скачивает оригинал
+    Note over WK: sharp: thumb/card/full,<br/>WebP, водяной знак, blurhash
+    WK->>S3: кладёт варианты
+    WK->>API: variants готовы, статус ready
+```
+
+Оригиналы грузятся **напрямую в хранилище**, минуя API: восьмимегабайтные файлы
+не должны идти через приложение. Обработка асинхронна, в админке виден статус.
+
+---
+
+## Жизненный цикл заказа
+
+```mermaid
+stateDiagram-v2
+    [*] --> new: заявка
+    new --> discussing: пишем в переписке
+    discussing --> quoted: назвали цену и доставку
+    quoted --> agreed: покупатель согласился
+    agreed --> paid: оплата (пока вручную)
+    paid --> in_progress: изготовление (для custom)
+    in_progress --> shipped: отправлено
+    paid --> shipped: отправлено (готовая работа)
+    shipped --> delivered: получено
+    new --> cancelled
+    discussing --> cancelled
+    quoted --> cancelled
+    delivered --> [*]
+    cancelled --> [*]
+```
+
+Позже между `agreed` и `paid` встроится платёжный шлюз — без изменения остальной
+схемы. Бронь работы снимается фоновой задачей, если заказ так и не дошёл до `agreed`.
+
+---
+
+## Что дальше по функционалу
+
+| Кусок | Статус |
+|---|---|
+| Публичный каталог | ✅ |
+| Авторизация админки | ✅ |
+| Заявка с резервом + outbox | ✅ |
+| Уведомление в Telegram (реальное) | ⬜ ждёт токен |
+| Админка: создание работ | ⬜ |
+| Обработка фото на загрузке | ⬜ |
+| Канбан заказов | ⬜ |
+| Страница статуса на живых данных | ⬜ |
+| chat-gateway, Mini App | ⬜ |
