@@ -66,7 +66,7 @@ export function RequestForm({ workSlug, workTitle }: { workSlug: string; workTit
           Заявка {orderNumber} отправлена
         </p>
         <p className="mt-2 text-[length:var(--text-sm)] text-muted-foreground">
-          Алия свяжется с вами и расскажет про доставку. Обычно отвечает в течение дня.
+          Мы свяжемся с вами и расскажем про доставку. Обычно отвечаем в течение дня.
         </p>
         <a
           href={telegramLink(`work_${workSlug}`)}

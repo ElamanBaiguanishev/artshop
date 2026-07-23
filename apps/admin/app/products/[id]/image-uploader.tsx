@@ -2,6 +2,7 @@
 
 import { adminApi, uploadToStorage } from '@/lib/admin-api';
 import type { AdminProductDetail } from '@artshop/shared';
+import { Plus, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 type Img = AdminProductDetail['images'][number];
@@ -71,25 +72,21 @@ export function ImageUploader({
     <div>
       <div className="flex flex-wrap gap-3">
         {images.map((img) => (
-          <div
-            key={img.id}
-            className="relative size-28 overflow-hidden rounded-[var(--radius-md)] bg-[var(--bg-subtle)]"
-          >
+          <div key={img.id} className="relative size-28 overflow-hidden rounded-md bg-muted">
             {img.thumbUrl ? (
               <img src={img.thumbUrl} alt="" className="size-full object-cover" />
             ) : (
-              <div className="flex size-full items-center justify-center text-[length:var(--text-2xs)] text-muted-foreground">
+              <div className="flex size-full items-center justify-center text-[0.6875rem] text-muted-foreground">
                 {img.processingStatus === 'failed' ? 'ошибка' : 'обработка…'}
               </div>
             )}
             <button
               type="button"
               onClick={() => remove(img.id)}
-              className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full text-[length:var(--text-xs)]"
-              style={{ background: 'oklch(0.27 0.013 58 / 0.6)', color: 'white' }}
+              className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-foreground/60 text-background transition-colors hover:bg-foreground/80"
               aria-label="Удалить"
             >
-              ×
+              <X className="size-3.5" />
             </button>
           </div>
         ))}
@@ -98,9 +95,16 @@ export function ImageUploader({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className="flex size-28 items-center justify-center rounded-[var(--radius-md)] border border-dashed border-border text-[length:var(--text-sm)] text-muted-foreground disabled:opacity-60"
+          className="flex size-28 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-input text-sm text-muted-foreground transition-colors hover:bg-accent/50 disabled:opacity-60"
         >
-          {uploading ? 'Загрузка…' : '+ Фото'}
+          {uploading ? (
+            'Загрузка…'
+          ) : (
+            <>
+              <Plus className="size-5" />
+              Фото
+            </>
+          )}
         </button>
       </div>
 
@@ -112,7 +116,7 @@ export function ImageUploader({
         hidden
         onChange={(e) => e.target.files && handleFiles(e.target.files)}
       />
-      <p className="mt-2 text-[length:var(--text-xs)] text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground">
         Первое фото — обложка. Снимок в интерьере показывается покупателю вторым.
       </p>
     </div>

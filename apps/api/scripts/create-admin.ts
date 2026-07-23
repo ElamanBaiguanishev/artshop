@@ -4,7 +4,7 @@
  * Регистрации в системе нет и не будет: пользователей двое, и открытая
  * форма регистрации у админки - лишняя дверь. Аккаунты создаются этим скриптом.
  *
- *   pnpm --filter @artshop/api admin:create alia@example.com "пароль" owner "Алия"
+ *   pnpm --filter @artshop/api admin:create admin@example.com "пароль" owner "artshop"
  */
 import { adminUsers, createDb } from '@artshop/db';
 import * as argon2 from 'argon2';

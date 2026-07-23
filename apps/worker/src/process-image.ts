@@ -63,7 +63,7 @@ export async function processImage(
         pipeline.composite([
           {
             input: Buffer.from(
-              `<svg width="240" height="40"><text x="0" y="28" font-family="sans-serif" font-size="22" fill="white" fill-opacity="0.35">Алия · handmade</text></svg>`,
+              `<svg width="240" height="40"><text x="0" y="28" font-family="sans-serif" font-size="22" fill="white" fill-opacity="0.35">artshop · handmade</text></svg>`,
             ),
             gravity: 'southeast',
           },

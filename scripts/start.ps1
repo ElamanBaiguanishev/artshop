@@ -96,8 +96,8 @@ if ($ready) {
   Write-Host @"
 
   Сайт:    http://localhost:3000
-  Админка: http://localhost:3000/admin/login
-           aliya@artshop.local / SuperSecret123
+  Админка: http://localhost:3002/login
+           admin@artshop.local / SuperSecret123
 
   Сервисы работают в отдельных окнах PowerShell.
   Чтобы остановить всё — закрой эти окна.

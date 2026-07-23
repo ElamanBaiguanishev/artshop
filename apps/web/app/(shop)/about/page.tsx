@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Об авторе',
-  description: 'Алия — художник из Петропавловска. Живопись маслом с натуры и украшения из смолы.',
+  description: 'Авторские работы из Петропавловска: живопись маслом с натуры и украшения из смолы.',
 };
 
 const MEDIA = 'http://localhost:9000/artshop-media/v';
@@ -18,7 +18,7 @@ export default function AboutPage() {
           width={1200}
           height={1500}
           blurhash={null}
-          alt="Алия"
+          alt="Автор"
           priority
           sizes="(max-width: 768px) 100vw, 45vw"
         />
@@ -26,7 +26,7 @@ export default function AboutPage() {
         <div>
           <p className="eyebrow mb-4">об авторе</p>
           <h1 className="text-[length:var(--text-3xl)]" style={{ fontFamily: 'var(--font-serif)' }}>
-            Алия
+            Об авторе
           </h1>
 
           <div className="mt-8 flex flex-col gap-5 text-muted-foreground">

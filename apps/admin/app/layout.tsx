@@ -1,4 +1,6 @@
 import { AdminShell } from '@/components/admin-shell';
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 import type { Metadata } from 'next';
 import { Golos_Text, Spectral } from 'next/font/google';
 import './globals.css';
@@ -18,15 +20,18 @@ const spectral = Spectral({
 });
 
 export const metadata: Metadata = {
-  title: 'Алия — админка',
+  title: 'artshop — админка',
   robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ru" className={`${golos.variable} ${spectral.variable}`}>
+    <html lang="ru" className={`${golos.variable} ${spectral.variable}`} suppressHydrationWarning>
       <body>
-        <AdminShell>{children}</AdminShell>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <AdminShell>{children}</AdminShell>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

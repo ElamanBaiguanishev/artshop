@@ -1,5 +1,8 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { adminApi } from '@/lib/admin-api';
 import type { ProductKind } from '@artshop/shared';
 import { useRouter } from 'next/navigation';
@@ -39,48 +42,39 @@ export default function NewProductPage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-[length:var(--text-2xl)]">Новая работа</h1>
-      <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">Название</span>
-          <input
+      <h1 className="font-serif text-2xl">Новая работа</h1>
+      <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="title">Название</Label>
+          <Input
+            id="title"
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Закат над степью"
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
           />
-        </label>
+        </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">Тип</span>
+          <Label>Тип</Label>
           <div className="flex gap-2">
             {KINDS.map((k) => (
-              <button
+              <Button
                 key={k.value}
                 type="button"
+                variant={kind === k.value ? 'default' : 'outline'}
+                className="flex-1"
                 onClick={() => setKind(k.value)}
-                className="min-h-[var(--tap-min)] flex-1 rounded-[var(--radius-md)] border text-[length:var(--text-sm)]"
-                style={{
-                  borderColor: kind === k.value ? 'var(--primary)' : 'var(--border)',
-                  background: kind === k.value ? 'var(--primary-tint)' : 'transparent',
-                  color: kind === k.value ? 'var(--primary)' : 'var(--fg-muted)',
-                }}
               >
                 {k.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-2 min-h-[var(--tap-min)] rounded-[var(--radius-md)] text-[length:var(--text-sm)] disabled:opacity-60"
-          style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
-        >
+        <Button type="submit" disabled={busy} className="mt-1 self-start">
           {busy ? 'Создаём…' : 'Создать и продолжить'}
-        </button>
+        </Button>
       </form>
     </div>
   );
