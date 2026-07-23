@@ -17,21 +17,21 @@ const NAV_GROUPS: {
   {
     title: 'Каталог',
     items: [
-      { href: '/admin/products', label: 'Работы', icon: Package },
-      { href: '/admin/media', label: 'Медиа', icon: Image, soon: true },
+      { href: '/products', label: 'Работы', icon: Package },
+      { href: '/media', label: 'Медиа', icon: Image, soon: true },
     ],
   },
   {
     title: 'Продажи',
     items: [
-      { href: '/admin/orders', label: 'Заказы', icon: LayoutGrid },
-      { href: '/admin/customers', label: 'Клиенты', icon: Users, soon: true },
-      { href: '/admin/reviews', label: 'Отзывы', icon: Star, soon: true },
+      { href: '/orders', label: 'Заказы', icon: LayoutGrid },
+      { href: '/customers', label: 'Клиенты', icon: Users, soon: true },
+      { href: '/reviews', label: 'Отзывы', icon: Star, soon: true },
     ],
   },
   {
     title: 'Система',
-    items: [{ href: '/admin/settings', label: 'Настройки', icon: Settings, soon: true }],
+    items: [{ href: '/settings', label: 'Настройки', icon: Settings, soon: true }],
   },
 ];
 
@@ -44,7 +44,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
 
-  const isLogin = pathname === '/admin/login';
+  const isLogin = pathname === '/login';
 
   useEffect(() => {
     if (isLogin) {
@@ -52,7 +52,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!getToken()) {
-      router.replace('/admin/login');
+      router.replace('/login');
       return;
     }
     setReady(true);
@@ -119,7 +119,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => {
               clearToken();
-              router.replace('/admin/login');
+              router.replace('/login');
             }}
             className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[length:var(--text-sm)] text-[var(--admin-muted)] transition-colors hover:text-[var(--admin-fg)]"
           >

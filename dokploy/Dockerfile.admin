@@ -1,0 +1,30 @@
+# Админка — отдельное Next-приложение, свой образ и свой контейнер.
+# Деплоится на свой поддомен (admin.artshop...) отдельно от витрины.
+
+FROM node:22-alpine AS base
+RUN corepack enable
+WORKDIR /app
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/admin/package.json ./apps/admin/
+COPY packages/shared/package.json ./packages/shared/
+RUN pnpm install --frozen-lockfile
+
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps ./apps
+COPY --from=deps /app/packages ./packages
+COPY . .
+# адрес API вшивается в клиентский бандл на этапе сборки
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV BUILD_STANDALONE=1
+RUN pnpm --filter @artshop/admin build
+
+FROM base AS production
+ENV NODE_ENV=production
+COPY --from=build /app/apps/admin/.next/standalone ./
+COPY --from=build /app/apps/admin/.next/static ./apps/admin/.next/static
+USER node
+CMD ["node", "apps/admin/server.js"]

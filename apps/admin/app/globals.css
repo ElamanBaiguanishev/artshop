@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* общие design-константы (типографика, отступы, радиусы) */
+@import "./tokens/typography.css";
+@import "./tokens/layout.css";
+
+/*
+  Палитра админки — строгая и нейтральная. Своё приложение, свой движок,
+  своя тема: админка это рабочий инструмент, важнее плотность и читаемость.
+*/
+:root {
+  --admin-bg: oklch(0.975 0.002 250);
+  --admin-surface: oklch(1 0 0);
+  --admin-fg: oklch(0.25 0.01 260);
+  --admin-muted: oklch(0.5 0.01 260);
+  --admin-faint: oklch(0.68 0.008 260);
+  --admin-border: oklch(0.92 0.004 260);
+  --admin-active-bg: oklch(0.95 0.015 255);
+  --admin-active-fg: oklch(0.45 0.13 265);
+
+  /* поверхности для форм внутри админки */
+  --surface-card: oklch(1 0 0);
+  --border: var(--admin-border);
+  --fg-strong: var(--admin-fg);
+  --fg-muted: var(--admin-muted);
+  --fg-faint: var(--admin-faint);
+  --primary: var(--admin-active-fg);
+  --primary-fg: oklch(0.99 0 0);
+  --primary-tint: oklch(0.45 0.13 265 / 0.1);
+  --danger: oklch(0.55 0.18 25);
+  --bg-subtle: var(--admin-bg);
+  --status-available: oklch(0.55 0.12 150);
+  --status-order: oklch(0.6 0.13 60);
+  --status-sold: oklch(0.5 0.02 260);
+}
+
+@theme inline {
+  --color-background: var(--admin-bg);
+  --color-foreground: var(--admin-fg);
+  --color-muted-foreground: var(--admin-muted);
+  --color-border: var(--admin-border);
+  --font-sans: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-spectral), ui-serif, Georgia, serif;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-golos), ui-sans-serif, system-ui, sans-serif;
+  background: var(--admin-bg);
+  color: var(--admin-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.text-muted-foreground {
+  color: var(--admin-muted);
+}
+.border-border {
+  border-color: var(--admin-border);
+}

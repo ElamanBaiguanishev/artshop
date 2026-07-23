@@ -34,7 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (res.status === 401) {
     clearToken();
-    if (typeof window !== 'undefined') window.location.href = '/admin/login';
+    if (typeof window !== 'undefined') window.location.href = '/login';
     throw new Error('Требуется вход');
   }
   if (!res.ok) {

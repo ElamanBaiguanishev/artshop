@@ -37,7 +37,7 @@ export default function AdminProductsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-[length:var(--text-2xl)]">Работы</h1>
         <Link
-          href="/admin/products/new"
+          href="/products/new"
           className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] px-5 py-2.5 text-[length:var(--text-sm)]"
           style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
         >
@@ -54,7 +54,7 @@ export default function AdminProductsPage() {
           {items.map((item) => (
             <Link
               key={item.id}
-              href={`/admin/products/${item.id}`}
+              href={`/products/${item.id}`}
               className="flex items-center gap-4 p-3 transition-colors hover:bg-[var(--bg-subtle)]"
             >
               <div className="size-14 shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-[var(--bg-subtle)]">

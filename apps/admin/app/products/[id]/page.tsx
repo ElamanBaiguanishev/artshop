@@ -84,7 +84,7 @@ export default function EditProductPage() {
     <div className="max-w-2xl">
       <button
         type="button"
-        onClick={() => router.push('/admin/products')}
+        onClick={() => router.push('/products')}
         className="text-[length:var(--text-sm)] text-muted-foreground"
       >
         ← К работам

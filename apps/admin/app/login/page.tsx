@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
     try {
       const { accessToken } = await adminApi.login(email, password);
       setToken(accessToken);
-      router.replace('/admin/products');
+      router.replace('/products');
     } catch {
       setError('Неверная почта или пароль');
     } finally {

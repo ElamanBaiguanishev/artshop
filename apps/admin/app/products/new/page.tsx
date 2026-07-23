@@ -34,7 +34,7 @@ export default function NewProductPage() {
       isFragile: kind === 'painting',
       customsCategory: kind === 'painting' ? 'original_art' : 'souvenir',
     });
-    router.replace(`/admin/products/${id}`);
+    router.replace(`/products/${id}`);
   }
 
   return (
