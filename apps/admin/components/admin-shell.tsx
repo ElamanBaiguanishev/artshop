@@ -1,7 +1,20 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { clearToken, getToken } from '@/lib/admin-api';
-import { Image, LayoutGrid, LogOut, Package, Settings, Star, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Image,
+  LayoutGrid,
+  LogOut,
+  Moon,
+  Package,
+  Settings,
+  Star,
+  Sun,
+  Users,
+} from 'lucide-react';
+import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -35,6 +48,25 @@ const NAV_GROUPS: {
   },
 ];
 
+/** Переключатель светлой/тёмной темы. */
+function ModeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const isDark = resolvedTheme === 'dark';
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      aria-label="Сменить тему"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+    >
+      {mounted && isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </Button>
+  );
+}
+
 /**
  * Оболочка админки: полноэкранный layout с сайдбаром, отдельный от витрины.
  * Проверяет вход на клиенте; страница логина выведена из-под проверки.
@@ -62,18 +94,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   if (!ready) return null;
 
   return (
-    <div className="flex min-h-dvh bg-[var(--admin-bg)] text-[var(--admin-fg)]">
+    <div className="flex min-h-dvh bg-background text-foreground">
       {/* сайдбар */}
-      <aside className="flex w-60 shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-surface)]">
-        <div className="flex h-14 items-center gap-2 border-b border-[var(--admin-border)] px-5">
-          <span className="text-[length:var(--text-base)] font-[var(--weight-semibold)]">Алия</span>
-          <span className="text-[length:var(--text-xs)] text-[var(--admin-muted)]">админка</span>
+      <aside className="flex w-60 shrink-0 flex-col border-r bg-card">
+        <div className="flex h-14 items-center gap-2 border-b px-5">
+          <span className="font-serif text-base font-semibold">artshop</span>
+          <span className="text-xs text-muted-foreground">админка</span>
+          <div className="ml-auto">
+            <ModeToggle />
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
           {NAV_GROUPS.map((group) => (
             <div key={group.title} className="mb-5">
-              <p className="mb-1.5 px-2 text-[length:var(--text-2xs)] uppercase tracking-[var(--tracking-caps)] text-[var(--admin-muted)]">
+              <p className="mb-1.5 px-2 text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 {group.title}
               </p>
               <div className="flex flex-col gap-0.5">
@@ -84,11 +119,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     return (
                       <span
                         key={item.href}
-                        className="flex cursor-default items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[length:var(--text-sm)] text-[var(--admin-faint)]"
+                        className="flex cursor-default items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground/60"
                       >
-                        <Icon size={16} />
+                        <Icon className="size-4" />
                         {item.label}
-                        <span className="ml-auto rounded-full bg-[var(--admin-bg)] px-1.5 py-0.5 text-[length:var(--text-2xs)]">
+                        <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground">
                           скоро
                         </span>
                       </span>
@@ -98,13 +133,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="flex items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[length:var(--text-sm)] transition-colors"
-                      style={{
-                        background: active ? 'var(--admin-active-bg)' : 'transparent',
-                        color: active ? 'var(--admin-active-fg)' : 'var(--admin-fg)',
-                      }}
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm transition-colors',
+                        active
+                          ? 'bg-accent font-medium text-accent-foreground'
+                          : 'text-foreground hover:bg-accent/50',
+                      )}
                     >
-                      <Icon size={16} />
+                      <Icon className="size-4" />
                       {item.label}
                     </Link>
                   );
@@ -114,18 +150,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="border-t border-[var(--admin-border)] p-3">
-          <button
-            type="button"
+        <div className="border-t p-3">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground"
             onClick={() => {
               clearToken();
               router.replace('/login');
             }}
-            className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] px-2 py-1.5 text-[length:var(--text-sm)] text-[var(--admin-muted)] transition-colors hover:text-[var(--admin-fg)]"
           >
-            <LogOut size={16} />
+            <LogOut className="size-4" />
             Выйти
-          </button>
+          </Button>
         </div>
       </aside>
 

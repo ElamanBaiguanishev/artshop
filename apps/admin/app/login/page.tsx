@@ -1,5 +1,9 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { adminApi, setToken } from '@/lib/admin-api';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -27,49 +31,44 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center px-5">
-      <form onSubmit={submit} className="w-full max-w-sm">
-        <h1 className="text-[length:var(--text-2xl)]" style={{ fontFamily: 'var(--font-serif)' }}>
-          Вход в админку
-        </h1>
-        <p className="mt-2 text-[length:var(--text-sm)] text-muted-foreground">
-          Панель управления работами и заказами.
-        </p>
+    <div className="flex min-h-dvh items-center justify-center bg-muted px-5">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl">Вход в админку</CardTitle>
+          <CardDescription>Панель управления работами и заказами.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Почта</Label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@artshop.local"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">Пароль</Label>
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
-        <div className="mt-8 flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Почта"
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
-          />
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Пароль"
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
-          />
-        </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-        {error && (
-          <p className="mt-3 text-[length:var(--text-sm)]" style={{ color: 'var(--danger)' }}>
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-5 min-h-[var(--tap-min)] w-full rounded-[var(--radius-md)] text-[length:var(--text-sm)] disabled:opacity-60"
-          style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
-        >
-          {busy ? 'Входим…' : 'Войти'}
-        </button>
-      </form>
+            <Button type="submit" disabled={busy} className="mt-1 w-full">
+              {busy ? 'Входим…' : 'Войти'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
