@@ -1,13 +1,12 @@
-import { SiteFooter } from '@/components/shop/site-footer';
-import { SiteHeader } from '@/components/shop/site-header';
 import type { Metadata } from 'next';
 import { Golos_Text, Spectral } from 'next/font/google';
 import './globals.css';
 
 /*
-  Шрифты из дизайн-системы, но self-hosted через next/font:
-  файлы едут с нашего домена, без обращения к Google при первой отрисовке.
-  display: swap - текст виден сразу, не ждёт загрузки начертания.
+  Корневой layout: только каркас документа и шрифты.
+  Оформление сайта (шапка, подвал) живёт в (shop)/layout.tsx,
+  админка (сайдбар, на весь экран) — в admin/layout.tsx.
+  Так витрина и админка не мешают друг другу.
 */
 const golos = Golos_Text({
   subsets: ['cyrillic', 'latin'],
@@ -32,21 +31,13 @@ export const metadata: Metadata = {
   },
   description:
     'Живопись маслом, брелоки и декор из эпоксидной смолы. Каждая работа в единственном экземпляре.',
-  openGraph: {
-    type: 'website',
-    locale: 'ru_RU',
-    siteName: 'Алия',
-  },
+  openGraph: { type: 'website', locale: 'ru_RU', siteName: 'Алия' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={`${golos.variable} ${spectral.variable}`}>
-      <body className="flex min-h-dvh flex-col">
-        <SiteHeader />
-        <div className="flex-1">{children}</div>
-        <SiteFooter />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
