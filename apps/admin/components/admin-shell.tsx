@@ -165,9 +165,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* контент */}
+      {/* контент: на всю ширину; узкие страницы (формы) ограничивают себя сами */}
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-4xl px-8 py-8">{children}</div>
+        <div className="px-8 py-8">{children}</div>
       </main>
     </div>
   );
