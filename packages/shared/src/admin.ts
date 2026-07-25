@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { productKinds } from './catalog';
 
 /** Контракты админки. Отдельно от публичных: здесь видно всё. */
 
@@ -24,6 +23,60 @@ export type LoginResponse = z.infer<typeof loginResponse>;
 
 export const productStatuses = ['draft', 'available', 'reserved', 'sold', 'archived'] as const;
 
+export const customsCategories = ['original_art', 'souvenir'] as const;
+
+// --- типы товаров (управляемый справочник) ---
+
+export const adminCategory = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  position: z.number(),
+  isActive: z.boolean(),
+  color: z.string().nullable(),
+  customsCategory: z.enum(customsCategories),
+  isFragileDefault: z.boolean(),
+  /** Сколько товаров этого типа — нужно для правил архива/удаления. */
+  productsCount: z.number(),
+});
+export type AdminCategory = z.infer<typeof adminCategory>;
+
+export const createCategoryRequest = z.object({
+  name: z.string().min(1).max(60),
+  /** Свой адрес; если не задан — генерируется транслитом из названия. */
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис')
+    .max(60)
+    .optional(),
+  color: z.string().max(60).optional(),
+  customsCategory: z.enum(customsCategories).default('souvenir'),
+  isFragileDefault: z.boolean().default(false),
+});
+export type CreateCategoryRequest = z.infer<typeof createCategoryRequest>;
+
+export const updateCategoryRequest = z.object({
+  name: z.string().min(1).max(60).optional(),
+  slug: z
+    .string()
+    .regex(/^[a-z0-9-]+$/, 'Только строчные латинские буквы, цифры и дефис')
+    .max(60)
+    .optional(),
+  color: z.string().max(60).nullable().optional(),
+  customsCategory: z.enum(customsCategories).optional(),
+  isFragileDefault: z.boolean().optional(),
+  /** Мягкое удаление: скрыть/вернуть тип. */
+  isActive: z.boolean().optional(),
+  position: z.number().int().min(0).optional(),
+});
+export type UpdateCategoryRequest = z.infer<typeof updateCategoryRequest>;
+
+/** Перенос товаров с одного типа на другой (перед архивом/удалением). */
+export const reassignCategoryRequest = z.object({
+  toCategoryId: z.string().uuid(),
+});
+export type ReassignCategoryRequest = z.infer<typeof reassignCategoryRequest>;
+
 /**
  * Создание работы. Цена в минорных единицах строкой:
  * JSON не умеет bigint, а number на больших суммах теряет точность.
@@ -31,7 +84,8 @@ export const productStatuses = ['draft', 'available', 'reserved', 'sold', 'archi
 export const createProductRequest = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
-  kind: z.enum(productKinds).default('painting'),
+  /** Тип товара — id из справочника categories. */
+  categoryId: z.string().uuid(),
   /** Свой адрес; если не задан - генерируется транслитом из названия. */
   slug: z
     .string()
@@ -50,9 +104,10 @@ export const createProductRequest = z.object({
   heightMm: z.number().int().positive().optional(),
   depthMm: z.number().int().positive().optional(),
   weightG: z.number().int().positive().optional(),
-  isFragile: z.boolean().default(false),
+  /** Если не заданы — берутся из дефолтов типа (categories). */
+  isFragile: z.boolean().optional(),
   /** Оригинальная живопись и сувениры по-разному проходят таможню. */
-  customsCategory: z.enum(['original_art', 'souvenir']).default('original_art'),
+  customsCategory: z.enum(customsCategories).optional(),
 
   materials: z.array(z.string().max(60)).max(12).optional(),
   year: z.number().int().min(1900).max(2100).optional(),
@@ -112,7 +167,12 @@ export const adminProductListItem = z.object({
   id: z.string(),
   slug: z.string(),
   title: z.string(),
-  kind: z.enum(productKinds),
+  category: z.object({
+    id: z.string(),
+    slug: z.string(),
+    name: z.string(),
+    color: z.string().nullable(),
+  }),
   status: z.enum(productStatuses),
   priceAmount: z.string().nullable(),
   priceCurrency: z.string(),

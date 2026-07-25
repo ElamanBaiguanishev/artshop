@@ -1,4 +1,4 @@
-import type { CatalogResponse, PublicProductDetail } from '@artshop/shared';
+import type { CatalogResponse, PublicCategory, PublicProductDetail } from '@artshop/shared';
 
 /**
  * Обращения с сервера идут по внутреннему адресу (в докере - по сети),
@@ -8,11 +8,11 @@ const BASE =
   process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3011';
 
 export async function fetchCatalog(params?: {
-  kind?: string;
+  category?: string;
   includeSold?: boolean;
 }): Promise<CatalogResponse> {
   const query = new URLSearchParams();
-  if (params?.kind) query.set('kind', params.kind);
+  if (params?.category) query.set('category', params.category);
   if (params?.includeSold === false) query.set('includeSold', 'false');
 
   try {
@@ -27,6 +27,18 @@ export async function fetchCatalog(params?: {
     // API недоступен (например, во время сборки) - отдаём пустой каталог,
     // страница соберётся и наполнится при следующей ревалидации
     return { items: [], nextCursor: null };
+  }
+}
+
+export async function fetchCategories(): Promise<PublicCategory[]> {
+  try {
+    const res = await fetch(`${BASE}/catalog/categories`, {
+      next: { revalidate: 60, tags: ['catalog', 'categories'] },
+    });
+    if (!res.ok) throw new Error(`Типы недоступны: ${res.status}`);
+    return res.json();
+  } catch {
+    return [];
   }
 }
 

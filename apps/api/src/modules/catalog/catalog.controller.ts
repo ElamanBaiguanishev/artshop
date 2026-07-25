@@ -35,6 +35,12 @@ export class CatalogController {
     return this.catalog.listSlugs();
   }
 
+  @Get('categories')
+  @ApiOkResponse({ description: 'Активные типы товаров — для фильтров витрины' })
+  categories() {
+    return this.catalog.listCategories();
+  }
+
   @Get(':slug')
   @ApiOkResponse({ description: 'Карточка работы; 301 если slug устарел' })
   async bySlug(

@@ -45,7 +45,9 @@ export default async function WorkPage({ params }: Props) {
   if (!work) notFound();
 
   const { items } = await fetchCatalog();
-  const similar = items.filter((w) => w.slug !== work.slug && w.kind === work.kind).slice(0, 3);
+  const similar = items
+    .filter((w) => w.slug !== work.slug && w.category.slug === work.category.slug)
+    .slice(0, 3);
 
   const sold = work.status === 'sold';
   const price = formatPrice(work.price);
@@ -98,7 +100,7 @@ export default async function WorkPage({ params }: Props) {
 
         <div>
           <p className="eyebrow mb-3">
-            {work.kind === 'painting' ? 'живопись' : work.kind === 'keychain' ? 'брелок' : 'декор'}
+            {work.category.name.toLowerCase()}
             {' · единственный экземпляр'}
           </p>
 

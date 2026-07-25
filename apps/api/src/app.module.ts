@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { DbModule } from './db/db.module';
 import { HealthController } from './health.controller';
+import { AdminCategoriesModule } from './modules/admin-categories/admin-categories.module';
 import { AdminProductsModule } from './modules/admin-products/admin-products.module';
 import { JwtAuthGuard } from './modules/auth/auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
@@ -26,6 +27,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     CatalogModule,
     OrdersModule,
     AdminProductsModule,
+    AdminCategoriesModule,
   ],
   controllers: [HealthController],
   providers: [

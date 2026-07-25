@@ -14,7 +14,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { adminApi } from '@/lib/admin-api';
-import type { AdminProductListItem } from '@artshop/shared';
+import type { AdminCategory, AdminProductListItem } from '@artshop/shared';
 import { ImageOff, LayoutGrid, List, Plus, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -25,13 +25,6 @@ const STATUS_LABEL: Record<string, string> = {
   reserved: 'Забронирована',
   sold: 'Продана',
   archived: 'В архиве',
-};
-
-const KIND_LABEL: Record<string, string> = {
-  painting: 'Живопись',
-  keychain: 'Брелок',
-  decor: 'Декор',
-  other: 'Другое',
 };
 
 /** Цвет точки статуса берём из токенов темы (работает и в тёмной). */
@@ -45,6 +38,7 @@ const STATUS_DOT: Record<string, string> = {
 
 type View = 'grid' | 'list';
 const GRID = 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6';
+const SKELETON_KEYS = Array.from({ length: 12 }, (_, i) => `sk-${i}`);
 
 function StatusBadge({ status, className }: { status: string; className?: string }) {
   return (
@@ -57,18 +51,21 @@ function StatusBadge({ status, className }: { status: string; className?: string
 
 export default function AdminProductsPage() {
   const [items, setItems] = useState<AdminProductListItem[]>([]);
+  const [cats, setCats] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('grid');
 
   // фильтры
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('all');
-  const [kind, setKind] = useState('all');
+  const [category, setCategory] = useState('all');
 
   useEffect(() => {
-    adminApi
-      .listProducts()
-      .then(setItems)
+    Promise.all([adminApi.listProducts(), adminApi.listCategories()])
+      .then(([products, categories]) => {
+        setItems(products);
+        setCats(categories);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -83,9 +80,9 @@ export default function AdminProductsPage() {
         const f = JSON.parse(savedFilters);
         if (typeof f.query === 'string') setQuery(f.query);
         if (typeof f.status === 'string') setStatus(f.status);
-        if (typeof f.kind === 'string') setKind(f.kind);
+        if (typeof f.category === 'string') setCategory(f.category);
       } catch {
-        // битый JSON — игнорируем, останутся значения по умолчанию
+        // битый JSON — игнорируем
       }
     }
   }, []);
@@ -95,31 +92,30 @@ export default function AdminProductsPage() {
     localStorage.setItem('products-view', next);
   }
 
-  /** Пишем фильтры в localStorage: текущее состояние + изменённое поле. */
-  function persistFilters(patch: Partial<{ query: string; status: string; kind: string }>) {
-    localStorage.setItem('products-filters', JSON.stringify({ query, status, kind, ...patch }));
+  function persistFilters(patch: Partial<{ query: string; status: string; category: string }>) {
+    localStorage.setItem('products-filters', JSON.stringify({ query, status, category, ...patch }));
   }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((it) => {
       if (status !== 'all' && it.status !== status) return false;
-      if (kind !== 'all' && it.kind !== kind) return false;
+      if (category !== 'all' && it.category.slug !== category) return false;
       if (q && !it.title.toLowerCase().includes(q) && !it.slug.toLowerCase().includes(q))
         return false;
       return true;
     });
-  }, [items, query, status, kind]);
+  }, [items, query, status, category]);
 
-  const hasFilters = query.trim() !== '' || status !== 'all' || kind !== 'all';
+  const hasFilters = query.trim() !== '' || status !== 'all' || category !== 'all';
 
   function resetFilters() {
     setQuery('');
     setStatus('all');
-    setKind('all');
+    setCategory('all');
     localStorage.setItem(
       'products-filters',
-      JSON.stringify({ query: '', status: 'all', kind: 'all' }),
+      JSON.stringify({ query: '', status: 'all', category: 'all' }),
     );
   }
 
@@ -195,27 +191,32 @@ export default function AdminProductsPage() {
         </Select>
 
         <Select
-          value={kind}
+          value={category}
           onValueChange={(v) => {
-            setKind(v);
-            persistFilters({ kind: v });
+            setCategory(v);
+            persistFilters({ category: v });
           }}
         >
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Все типы</SelectItem>
-            {Object.entries(KIND_LABEL).map(([v, label]) => (
-              <SelectItem key={v} value={v}>
-                {label}
+            {cats.map((c) => (
+              <SelectItem key={c.id} value={c.slug}>
+                {c.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         {hasFilters && (
-          <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={resetFilters}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={resetFilters}
+          >
             <X className="size-4" />
             Сбросить
           </Button>
@@ -224,10 +225,12 @@ export default function AdminProductsPage() {
 
       {loading ? (
         <div className={`mt-6 ${view === 'grid' ? GRID : 'flex flex-col gap-2'}`}>
-          {Array.from({ length: view === 'grid' ? 12 : 6 }).map((_, i) => (
+          {SKELETON_KEYS.slice(0, view === 'grid' ? 12 : 6).map((k) => (
             <Skeleton
-              key={i}
-              className={view === 'grid' ? 'aspect-[4/5] w-full rounded-xl' : 'h-20 w-full rounded-lg'}
+              key={k}
+              className={
+                view === 'grid' ? 'aspect-[4/5] w-full rounded-xl' : 'h-20 w-full rounded-lg'
+              }
             />
           ))}
         </div>
@@ -263,7 +266,7 @@ export default function AdminProductsPage() {
                 <div className="p-3">
                   <p className="truncate font-medium">{item.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {item.imagesCount} фото · /{item.slug}
+                    {item.category.name} · {item.imagesCount} фото
                   </p>
                 </div>
               </Card>
@@ -289,7 +292,7 @@ export default function AdminProductsPage() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{item.title}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {item.imagesCount} фото · /{item.slug}
+                    {item.category.name} · {item.imagesCount} фото · /{item.slug}
                   </p>
                 </div>
                 <StatusBadge status={item.status} className="shrink-0" />

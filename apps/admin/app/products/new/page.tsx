@@ -3,16 +3,18 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { adminApi } from '@/lib/admin-api';
-import type { ProductKind } from '@artshop/shared';
+import type { AdminCategory } from '@artshop/shared';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-
-const KINDS: { value: ProductKind; label: string }[] = [
-  { value: 'painting', label: 'Живопись' },
-  { value: 'keychain', label: 'Брелок' },
-  { value: 'decor', label: 'Декор' },
-];
+import { useEffect, useState } from 'react';
 
 /**
  * Создание — минимум: название и тип. Всё остальное (цена, фото, размеры)
@@ -21,61 +23,81 @@ const KINDS: { value: ProductKind; label: string }[] = [
 export default function NewProductPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
-  const [kind, setKind] = useState<ProductKind>('painting');
+  const [cats, setCats] = useState<AdminCategory[]>([]);
+  const [categoryId, setCategoryId] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    adminApi.listCategories().then((all) => {
+      const active = all.filter((c) => c.isActive);
+      setCats(active);
+      if (active[0]) setCategoryId(active[0].id);
+    });
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!categoryId) return;
     setBusy(true);
     const { id } = await adminApi.createProduct({
       title,
-      kind,
+      categoryId,
       priceCurrency: 'KZT',
       priceOnRequest: false,
       isUnique: true,
       quantity: 1,
-      isFragile: kind === 'painting',
-      customsCategory: kind === 'painting' ? 'original_art' : 'souvenir',
     });
     router.replace(`/products/${id}`);
   }
 
+  const noCategories = cats.length === 0;
+
   return (
     <div className="max-w-lg">
       <h1 className="font-serif text-2xl">Новая работа</h1>
-      <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="title">Название</Label>
-          <Input
-            id="title"
-            required
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Закат над степью"
-          />
-        </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label>Тип</Label>
-          <div className="flex gap-2">
-            {KINDS.map((k) => (
-              <Button
-                key={k.value}
-                type="button"
-                variant={kind === k.value ? 'default' : 'outline'}
-                className="flex-1"
-                onClick={() => setKind(k.value)}
-              >
-                {k.label}
-              </Button>
-            ))}
+      {noCategories ? (
+        <p className="mt-6 text-sm text-muted-foreground">
+          Сначала заведите хотя бы один тип товара в разделе{' '}
+          <Link href="/categories" className="text-primary hover:underline">
+            Типы
+          </Link>
+          .
+        </p>
+      ) : (
+        <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="title">Название</Label>
+            <Input
+              id="title"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Закат над степью"
+            />
           </div>
-        </div>
 
-        <Button type="submit" disabled={busy} className="mt-1 self-start">
-          {busy ? 'Создаём…' : 'Создать и продолжить'}
-        </Button>
-      </form>
+          <div className="flex flex-col gap-1.5">
+            <Label>Тип</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Выберите тип" />
+              </SelectTrigger>
+              <SelectContent>
+                {cats.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button type="submit" disabled={busy} className="mt-1 self-start">
+            {busy ? 'Создаём…' : 'Создать и продолжить'}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

@@ -5,29 +5,32 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { adminApi } from '@/lib/admin-api';
-import type { AdminProductDetail } from '@artshop/shared';
+import type { AdminCategory, AdminProductDetail } from '@artshop/shared';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ImageUploader } from './image-uploader';
 
-const KIND_LABEL: Record<string, string> = {
-  painting: 'Живопись',
-  keychain: 'Брелок',
-  decor: 'Декор',
-};
-
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<AdminProductDetail | null>(null);
+  const [cats, setCats] = useState<AdminCategory[]>([]);
   const [saving, setSaving] = useState(false);
 
   // поля формы
   const [title, setTitle] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [priceOnRequest, setPriceOnRequest] = useState(false);
@@ -38,9 +41,14 @@ export default function EditProductPage() {
   const [images, setImages] = useState<AdminProductDetail['images']>([]);
 
   useEffect(() => {
+    adminApi.listCategories().then(setCats);
+  }, []);
+
+  useEffect(() => {
     adminApi.getProduct(id).then((p) => {
       setProduct(p);
       setTitle(p.title);
+      setCategoryId(p.category.id);
       setDescription(p.description ?? '');
       // цена приходит в минорных единицах — показываем в основных
       setPrice(p.priceAmount ? String(Number(p.priceAmount) / 100) : '');
@@ -58,6 +66,7 @@ export default function EditProductPage() {
     try {
       await adminApi.updateProduct(id, {
         title,
+        ...(categoryId && { categoryId }),
         description: description || undefined,
         // основные единицы -> минорные целым числом
         priceAmount: price ? String(Math.round(Number(price) * 100)) : undefined,
@@ -108,7 +117,7 @@ export default function EditProductPage() {
       <div className="mt-3 flex items-center justify-between gap-4">
         <h1 className="font-serif text-2xl">{title || 'Без названия'}</h1>
         <Badge variant="outline" className="shrink-0">
-          {KIND_LABEL[product.kind]} · {isPublished ? 'опубликована' : product.status}
+          {product.category.name} · {isPublished ? 'опубликована' : product.status}
         </Badge>
       </div>
 
@@ -121,6 +130,23 @@ export default function EditProductPage() {
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="title">Название</Label>
           <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+
+        <div className="flex w-56 flex-col gap-1.5">
+          <Label>Тип</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Тип" />
+            </SelectTrigger>
+            <SelectContent>
+              {cats.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                  {!c.isActive ? ' (скрыт)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex flex-col gap-1.5">

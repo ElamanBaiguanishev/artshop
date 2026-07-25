@@ -12,6 +12,7 @@ import {
   Settings,
   Star,
   Sun,
+  Tags,
   Users,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -31,6 +32,7 @@ const NAV_GROUPS: {
     title: 'Каталог',
     items: [
       { href: '/products', label: 'Работы', icon: Package },
+      { href: '/categories', label: 'Типы', icon: Tags },
       { href: '/media', label: 'Медиа', icon: Image, soon: true },
     ],
   },

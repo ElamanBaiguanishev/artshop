@@ -1,4 +1,10 @@
-import { type Database, productImages, productSlugHistory, products } from '@artshop/db';
+import {
+  type Database,
+  categories,
+  productImages,
+  productSlugHistory,
+  products,
+} from '@artshop/db';
 import {
   type AdminProductDetail,
   type AdminProductListItem,
@@ -6,10 +12,13 @@ import {
   type UpdateProductRequest,
   uniqueSlug,
 } from '@artshop/shared';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 import { DB } from '../../db/db.module';
 import { S3Service } from '../media/s3.service';
+
+type CategoryRow = typeof categories.$inferSelect;
+type CategorySummary = AdminProductListItem['category'];
 
 @Injectable()
 export class AdminProductsService {
@@ -21,6 +30,8 @@ export class AdminProductsService {
   async list(): Promise<AdminProductListItem[]> {
     const rows = await this.db.select().from(products).orderBy(desc(products.updatedAt));
     const images = await this.db.select().from(productImages);
+    const cats = await this.db.select().from(categories);
+    const catById = new Map(cats.map((c) => [c.id, c]));
 
     const byProduct = new Map<string, typeof images>();
     for (const img of images) {
@@ -31,17 +42,15 @@ export class AdminProductsService {
 
     return rows.map((p) => {
       const imgs = (byProduct.get(p.id) ?? []).sort((a, b) => a.position - b.position);
-      const cover = imgs[0];
-      const coverThumb = this.thumbUrl(cover?.variants);
       return {
         id: p.id,
         slug: p.slug,
         title: p.title,
-        kind: p.kind as AdminProductListItem['kind'],
+        category: this.categorySummary(catById.get(p.categoryId)),
         status: p.status as AdminProductListItem['status'],
         priceAmount: p.priceAmount?.toString() ?? null,
         priceCurrency: p.priceCurrency,
-        coverThumbUrl: coverThumb,
+        coverThumbUrl: this.thumbUrl(imgs[0]?.variants),
         imagesCount: imgs.length,
         updatedAt: p.updatedAt.toISOString(),
       };
@@ -51,6 +60,12 @@ export class AdminProductsService {
   async get(id: string): Promise<AdminProductDetail> {
     const [p] = await this.db.select().from(products).where(eq(products.id, id)).limit(1);
     if (!p) throw new NotFoundException('Работа не найдена');
+
+    const [cat] = await this.db
+      .select()
+      .from(categories)
+      .where(eq(categories.id, p.categoryId))
+      .limit(1);
 
     const imgs = await this.db
       .select()
@@ -62,7 +77,7 @@ export class AdminProductsService {
       id: p.id,
       slug: p.slug,
       title: p.title,
-      kind: p.kind as AdminProductDetail['kind'],
+      category: this.categorySummary(cat),
       status: p.status as AdminProductDetail['status'],
       priceAmount: p.priceAmount?.toString() ?? null,
       priceCurrency: p.priceCurrency,
@@ -93,6 +108,7 @@ export class AdminProductsService {
   }
 
   async create(dto: CreateProductRequest): Promise<{ id: string }> {
+    const cat = await this.requireCategory(dto.categoryId);
     const slug = dto.slug ? dto.slug : await uniqueSlug(dto.title, (s) => this.slugTaken(s));
 
     const [created] = await this.db
@@ -101,7 +117,7 @@ export class AdminProductsService {
         slug,
         title: dto.title,
         description: dto.description,
-        kind: dto.kind,
+        categoryId: dto.categoryId,
         status: 'draft',
         isUnique: dto.isUnique,
         quantity: dto.quantity,
@@ -112,8 +128,9 @@ export class AdminProductsService {
         heightMm: dto.heightMm,
         depthMm: dto.depthMm,
         weightG: dto.weightG,
-        isFragile: dto.isFragile,
-        customsCategory: dto.customsCategory,
+        // не заданы явно — берём дефолты из типа товара
+        isFragile: dto.isFragile ?? cat.isFragileDefault,
+        customsCategory: dto.customsCategory ?? cat.customsCategory,
         materials: dto.materials,
         year: dto.year,
       })
@@ -125,6 +142,7 @@ export class AdminProductsService {
   async update(id: string, dto: UpdateProductRequest): Promise<{ id: string }> {
     const [current] = await this.db.select().from(products).where(eq(products.id, id)).limit(1);
     if (!current) throw new NotFoundException('Работа не найдена');
+    if (dto.categoryId !== undefined) await this.requireCategory(dto.categoryId);
 
     // смена опубликованного slug: старый адрес обязан отвечать редиректом
     if (dto.slug && dto.slug !== current.slug && current.status !== 'draft') {
@@ -142,7 +160,7 @@ export class AdminProductsService {
         ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.kind !== undefined && { kind: dto.kind }),
+        ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.isUnique !== undefined && { isUnique: dto.isUnique }),
         ...(dto.quantity !== undefined && { quantity: dto.quantity }),
@@ -169,6 +187,22 @@ export class AdminProductsService {
 
   async deleteImage(imageId: string): Promise<void> {
     await this.db.delete(productImages).where(eq(productImages.id, imageId));
+  }
+
+  private async requireCategory(id: string): Promise<CategoryRow> {
+    const [cat] = await this.db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    if (!cat) throw new BadRequestException('Тип товара не найден');
+    return cat;
+  }
+
+  private categorySummary(cat: CategoryRow | undefined): CategorySummary {
+    // категория всегда есть (FK NOT NULL), но подстрахуемся на случай гонки
+    return {
+      id: cat?.id ?? '',
+      slug: cat?.slug ?? 'unknown',
+      name: cat?.name ?? 'Без типа',
+      color: cat?.color ?? null,
+    };
   }
 
   private async slugTaken(slug: string): Promise<boolean> {
