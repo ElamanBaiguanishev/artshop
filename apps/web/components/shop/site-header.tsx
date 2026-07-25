@@ -18,7 +18,7 @@ export function SiteHeader() {
           className="text-[length:var(--text-xl)]"
           style={{ fontFamily: 'var(--font-serif)', letterSpacing: 'var(--tracking-tight)' }}
         >
-          Алия
+          artshop
         </Link>
 
         <nav className="flex items-center gap-6">

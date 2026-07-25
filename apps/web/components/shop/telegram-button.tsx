@@ -1,6 +1,6 @@
 import { Send } from 'lucide-react';
 
-const BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT ?? 'aliya_art_bot';
+const BOT = process.env.NEXT_PUBLIC_TELEGRAM_BOT ?? 'artshop_bot';
 
 /**
  * Кнопка связи. Бот не может написать первым - разговор начинает покупатель,

@@ -4,6 +4,8 @@
 FROM node:22-alpine AS base
 RUN corepack enable
 WORKDIR /app
+# анонимная телеметрия Next отключена и на сборке, и в рантайме
+ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

@@ -9,8 +9,13 @@ import { z } from 'zod';
  * при добавлении новой колонки.
  */
 
-export const productKinds = ['painting', 'keychain', 'decor', 'other'] as const;
-export type ProductKind = (typeof productKinds)[number];
+/** Публичное представление типа товара (управляемый справочник categories). */
+export const publicCategory = z.object({
+  slug: z.string(),
+  name: z.string(),
+  color: z.string().nullable(),
+});
+export type PublicCategory = z.infer<typeof publicCategory>;
 
 export const publicProductStatuses = ['available', 'sold', 'on_order'] as const;
 export type PublicProductStatus = (typeof publicProductStatuses)[number];
@@ -42,7 +47,7 @@ export const publicPrice = z.object({
 export const publicProductCard = z.object({
   slug: z.string(),
   title: z.string(),
-  kind: z.enum(productKinds),
+  category: publicCategory,
   status: z.enum(publicProductStatuses),
   price: publicPrice.nullable(),
   priceOnRequest: z.boolean(),
@@ -79,7 +84,8 @@ const queryBoolean = z.preprocess(
 
 /** Параметры выдачи каталога. Подгрузка курсором, а не страницами. */
 export const catalogQuery = z.object({
-  kind: z.enum(productKinds).optional(),
+  /** Фильтр по типу товара — slug категории. */
+  category: z.string().optional(),
   /** Показывать ли проданные. По умолчанию да: они работают как соцдоказательство. */
   includeSold: queryBoolean.default(true),
   limit: z.coerce.number().int().min(1).max(48).default(24),

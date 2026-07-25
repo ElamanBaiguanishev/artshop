@@ -26,12 +26,12 @@ const spectral = Spectral({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'Алия — авторские работы ручной работы',
-    template: '%s — Алия',
+    default: 'artshop — авторские работы ручной работы',
+    template: '%s — artshop',
   },
   description:
     'Живопись маслом, брелоки и декор из эпоксидной смолы. Каждая работа в единственном экземпляре.',
-  openGraph: { type: 'website', locale: 'ru_RU', siteName: 'Алия' },
+  openGraph: { type: 'website', locale: 'ru_RU', siteName: 'artshop' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -3,17 +3,23 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3002",
+    "dev": "next dev --port 3002 --turbopack",
     "build": "next build",
     "start": "next start --port 3002",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@artshop/shared": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.469.0",
     "next": "^15.1.3",
+    "next-themes": "^0.4.6",
+    "radix-ui": "^1.6.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
@@ -21,6 +27,7 @@
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "tailwindcss": "^4.0.0",
+    "tw-animate-css": "^1.4.0",
     "typescript": "^5.7.2"
   }
 }

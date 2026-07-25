@@ -1,11 +1,10 @@
-import type { PublicProductCard, PublicProductDetail } from '@artshop/shared';
+import type { PublicCategory, PublicProductCard, PublicProductDetail } from '@artshop/shared';
 
 type PublicImage = PublicProductDetail['images'][number];
 
 type ProductRow = {
   slug: string;
   title: string;
-  kind: string;
   status: string;
   priceAmount: bigint | null;
   priceCurrency: string;
@@ -60,13 +59,17 @@ function toPrice(row: ProductRow): PublicProductCard['price'] {
   return { amount: row.priceAmount.toString(), currency: row.priceCurrency };
 }
 
-export function toCard(row: ProductRow, images: ImageRow[]): PublicProductCard {
+export function toCard(
+  row: ProductRow,
+  images: ImageRow[],
+  category: PublicCategory,
+): PublicProductCard {
   const first = images[0];
   const cover = first ? toPublicImage(first) : null;
   return {
     slug: row.slug,
     title: row.title,
-    kind: row.kind as PublicProductCard['kind'],
+    category,
     status: toPublicStatus(row.status),
     price: toPrice(row),
     priceOnRequest: row.priceOnRequest,
@@ -74,14 +77,18 @@ export function toCard(row: ProductRow, images: ImageRow[]): PublicProductCard {
   };
 }
 
-export function toDetail(row: ProductRow, images: ImageRow[]): PublicProductDetail {
+export function toDetail(
+  row: ProductRow,
+  images: ImageRow[],
+  category: PublicCategory,
+): PublicProductDetail {
   const ready = images
     .sort((a, b) => a.position - b.position)
     .map(toPublicImage)
     .filter((i): i is PublicImage => i !== null);
 
   return {
-    ...toCard(row, images),
+    ...toCard(row, images, category),
     description: row.description,
     images: ready,
     dimensions:

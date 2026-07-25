@@ -31,8 +31,6 @@ const timestamps = {
 
 // --- справочники ---
 
-export const productKind = pgEnum('product_kind', ['painting', 'keychain', 'decor', 'other']);
-
 export const productStatus = pgEnum('product_status', [
   'draft',
   'available',
@@ -74,12 +72,43 @@ export const outboxStatus = pgEnum('outbox_status', ['pending', 'sent', 'failed'
 
 // --- каталог ---
 
+/**
+ * Типы товаров — управляемый справочник (раньше был enum product_kind).
+ * Заказчик сам ведёт список: создать, переименовать, задать порядок, скрыть.
+ * Мягкое удаление: тип с товарами не удаляется, только is_active=false.
+ */
+export const categories = pgTable(
+  'categories',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    /** Порядок в списках и фильтрах. */
+    position: integer('position').notNull().default(0),
+    /** Скрытый тип: не предлагается для новых товаров и не виден в фильтрах витрины. */
+    isActive: boolean('is_active').notNull().default(true),
+    /** Цвет-акцент для чипа типа (oklch/hex), необязателен. */
+    color: text('color'),
+    /** Дефолты, которые получает новый товар этого типа. */
+    customsCategory: customsCategory('customs_category').notNull().default('original_art'),
+    isFragileDefault: boolean('is_fragile_default').notNull().default(false),
+    ...timestamps,
+  },
+  (t) => ({
+    slugIdx: uniqueIndex('categories_slug_idx').on(t.slug),
+    positionIdx: index('categories_position_idx').on(t.position),
+  }),
+);
+
 export const products = pgTable(
   'products',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     slug: text('slug').notNull(),
-    kind: productKind('kind').notNull().default('painting'),
+    /** Тип товара — ссылка на управляемый справочник categories. */
+    categoryId: uuid('category_id')
+      .notNull()
+      .references(() => categories.id),
     status: productStatus('status').notNull().default('draft'),
 
     title: text('title').notNull(),
@@ -114,6 +143,7 @@ export const products = pgTable(
   (t) => ({
     slugIdx: uniqueIndex('products_slug_idx').on(t.slug),
     listingIdx: index('products_listing_idx').on(t.status, t.publishedAt),
+    categoryIdx: index('products_category_idx').on(t.categoryId),
   }),
 );
 

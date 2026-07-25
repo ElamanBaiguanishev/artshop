@@ -1,26 +1,36 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { adminApi } from '@/lib/admin-api';
-import type { AdminProductDetail } from '@artshop/shared';
+import type { AdminCategory, AdminProductDetail } from '@artshop/shared';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { ImageUploader } from './image-uploader';
-
-const KIND_LABEL: Record<string, string> = {
-  painting: 'Живопись',
-  keychain: 'Брелок',
-  decor: 'Декор',
-};
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<AdminProductDetail | null>(null);
+  const [cats, setCats] = useState<AdminCategory[]>([]);
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
 
   // поля формы
   const [title, setTitle] = useState('');
+  const [categoryId, setCategoryId] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [priceOnRequest, setPriceOnRequest] = useState(false);
@@ -31,9 +41,14 @@ export default function EditProductPage() {
   const [images, setImages] = useState<AdminProductDetail['images']>([]);
 
   useEffect(() => {
+    adminApi.listCategories().then(setCats);
+  }, []);
+
+  useEffect(() => {
     adminApi.getProduct(id).then((p) => {
       setProduct(p);
       setTitle(p.title);
+      setCategoryId(p.category.id);
       setDescription(p.description ?? '');
       // цена приходит в минорных единицах — показываем в основных
       setPrice(p.priceAmount ? String(Number(p.priceAmount) / 100) : '');
@@ -51,6 +66,7 @@ export default function EditProductPage() {
     try {
       await adminApi.updateProduct(id, {
         title,
+        ...(categoryId && { categoryId }),
         description: description || undefined,
         // основные единицы -> минорные целым числом
         priceAmount: price ? String(Math.round(Number(price) * 100)) : undefined,
@@ -66,10 +82,17 @@ export default function EditProductPage() {
         year: year ? Number(year) : undefined,
         ...(nextStatus && { status: nextStatus }),
       });
-      const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      setSavedAt(time);
       const fresh = await adminApi.getProduct(id);
       setProduct(fresh);
+      toast.success(
+        nextStatus === 'available'
+          ? 'Работа опубликована'
+          : nextStatus === 'archived'
+            ? 'Снята с публикации'
+            : 'Сохранено',
+      );
+    } catch {
+      toast.error('Не удалось сохранить');
     } finally {
       setSaving(false);
     }
@@ -82,148 +105,144 @@ export default function EditProductPage() {
 
   return (
     <div className="max-w-2xl">
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground"
         onClick={() => router.push('/products')}
-        className="text-[length:var(--text-sm)] text-muted-foreground"
       >
-        ← К работам
-      </button>
+        <ArrowLeft className="size-4" />К работам
+      </Button>
 
       <div className="mt-3 flex items-center justify-between gap-4">
-        <h1 className="text-[length:var(--text-2xl)]">{title || 'Без названия'}</h1>
-        <span className="text-[length:var(--text-xs)] uppercase text-muted-foreground">
-          {KIND_LABEL[product.kind]} · {isPublished ? 'опубликована' : product.status}
-        </span>
+        <h1 className="font-serif text-2xl">{title || 'Без названия'}</h1>
+        <Badge variant="outline" className="shrink-0">
+          {product.category.name} · {isPublished ? 'опубликована' : product.status}
+        </Badge>
       </div>
 
       <section className="mt-6">
-        <p className="mb-2 text-[length:var(--text-sm)] text-muted-foreground">Фотографии</p>
+        <p className="mb-2 text-sm text-muted-foreground">Фотографии</p>
         <ImageUploader productId={id} images={images} onChange={setImages} />
       </section>
 
-      <section className="mt-8 flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">Название</span>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
-          />
-        </label>
+      <section className="mt-8 flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="title">Название</Label>
+          <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">Описание</span>
-          <textarea
+        <div className="flex w-56 flex-col gap-1.5">
+          <Label>Тип</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Тип" />
+            </SelectTrigger>
+            <SelectContent>
+              {cats.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                  {!c.isActive ? ' (скрыт)' : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="description">Описание</Label>
+          <Textarea
+            id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] p-4"
           />
-        </label>
+        </div>
 
-        <div className="flex gap-3">
-          <label className="flex flex-1 flex-col gap-1.5">
-            <span className="text-[length:var(--text-sm)] text-muted-foreground">Цена, ₸</span>
-            <input
+        <div className="flex items-end gap-4">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label htmlFor="price">Цена, ₸</Label>
+            <Input
+              id="price"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               disabled={priceOnRequest}
               inputMode="numeric"
-              className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4 disabled:opacity-50"
             />
-          </label>
-          <label className="mt-6 flex items-center gap-2 text-[length:var(--text-sm)]">
-            <input
-              type="checkbox"
+          </div>
+          <Label className="flex h-9 items-center gap-2 font-normal">
+            <Checkbox
               checked={priceOnRequest}
-              onChange={(e) => setPriceOnRequest(e.target.checked)}
+              onCheckedChange={(v) => setPriceOnRequest(v === true)}
             />
             По запросу
-          </label>
+          </Label>
         </div>
 
-        <div className="flex gap-3">
-          <label className="flex flex-1 flex-col gap-1.5">
-            <span className="text-[length:var(--text-sm)] text-muted-foreground">Ширина, см</span>
-            <input
+        <div className="flex gap-4">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label htmlFor="width">Ширина, см</Label>
+            <Input
+              id="width"
               value={width}
               onChange={(e) => setWidth(e.target.value)}
               inputMode="numeric"
-              className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
             />
-          </label>
-          <label className="flex flex-1 flex-col gap-1.5">
-            <span className="text-[length:var(--text-sm)] text-muted-foreground">Высота, см</span>
-            <input
+          </div>
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Label htmlFor="height">Высота, см</Label>
+            <Input
+              id="height"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
               inputMode="numeric"
-              className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
             />
-          </label>
+          </div>
         </div>
 
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">
-            Материалы через запятую
-          </span>
-          <input
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="materials">Материалы через запятую</Label>
+          <Input
+            id="materials"
             value={materials}
             onChange={(e) => setMaterials(e.target.value)}
             placeholder="холст, масло"
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
           />
-        </label>
+        </div>
 
-        <label className="flex w-32 flex-col gap-1.5">
-          <span className="text-[length:var(--text-sm)] text-muted-foreground">Год</span>
-          <input
+        <div className="flex w-32 flex-col gap-1.5">
+          <Label htmlFor="year">Год</Label>
+          <Input
+            id="year"
             value={year}
             onChange={(e) => setYear(e.target.value)}
             inputMode="numeric"
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border bg-[var(--surface-card)] px-4"
           />
-        </label>
+        </div>
       </section>
 
-      <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border pt-6">
-        <button
-          type="button"
-          onClick={() => save()}
-          disabled={saving}
-          className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] border border-border px-5 text-[length:var(--text-sm)] disabled:opacity-60"
-        >
+      <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
+        <Button variant="outline" onClick={() => save()} disabled={saving}>
           {saving ? 'Сохраняем…' : 'Сохранить'}
-        </button>
+        </Button>
 
         {!isPublished ? (
-          <button
-            type="button"
+          <Button
             onClick={() => save('available')}
             disabled={saving || !hasReadyImage}
             title={hasReadyImage ? '' : 'Добавьте хотя бы одно фото'}
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] px-5 text-[length:var(--text-sm)] disabled:opacity-50"
-            style={{ background: 'var(--primary)', color: 'var(--primary-fg)' }}
           >
             Опубликовать
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
             onClick={() => save('archived')}
             disabled={saving}
-            className="min-h-[var(--tap-min)] rounded-[var(--radius-md)] px-5 text-[length:var(--text-sm)]"
-            style={{ color: 'var(--danger)' }}
           >
             Снять с публикации
-          </button>
-        )}
-
-        {savedAt && (
-          <span className="text-[length:var(--text-xs)] text-muted-foreground">
-            Сохранено в {savedAt}
-          </span>
+          </Button>
         )}
 
         {isPublished && (
@@ -231,9 +250,10 @@ export default function EditProductPage() {
             href={`/works/${product.slug}`}
             target="_blank"
             rel="noreferrer"
-            className="ml-auto text-[length:var(--text-sm)] text-[var(--primary)]"
+            className="ml-auto inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
           >
-            Открыть на сайте →
+            Открыть на сайте
+            <ExternalLink className="size-3.5" />
           </a>
         )}
       </div>

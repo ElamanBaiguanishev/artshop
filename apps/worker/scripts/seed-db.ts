@@ -3,7 +3,7 @@
  * Только для локальной разработки.
  *   pnpm --filter @artshop/worker seed:db
  */
-import { createDb, productImages, products } from '@artshop/db';
+import { categories, createDb, productImages, products } from '@artshop/db';
 
 const PUBLIC = process.env.S3_PUBLIC_URL ?? 'http://localhost:9000/artshop-media';
 
@@ -187,6 +187,11 @@ async function main() {
   await db.delete(productImages);
   await db.delete(products);
 
+  // типы товаров сидит миграция 0002_categories; тянем их id по slug
+  const cats = await db.select().from(categories);
+  const catIdBySlug = new Map(cats.map((c) => [c.slug, c.id]));
+  const otherId = catIdBySlug.get('other');
+
   for (const w of WORKS) {
     const published = new Date(Date.now() - w.daysAgo * 86_400_000);
     const [created] = await db
@@ -195,7 +200,7 @@ async function main() {
         slug: w.slug,
         title: w.title,
         description: w.description,
-        kind: w.kind,
+        categoryId: catIdBySlug.get(w.kind) ?? otherId ?? '',
         status: w.status,
         priceAmount: w.price === null ? null : BigInt(w.price),
         priceCurrency: 'KZT',

@@ -7,7 +7,7 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-[var(--container)] flex-col gap-8 px-5 md:flex-row md:items-start md:justify-between md:px-10">
         <div className="max-w-[36ch]">
           <p className="text-[length:var(--text-xl)]" style={{ fontFamily: 'var(--font-serif)' }}>
-            Алия
+            artshop
           </p>
           <p className="mt-3 text-[length:var(--text-sm)] text-muted-foreground">
             Живопись маслом, брелоки и декор из эпоксидной смолы. Петропавловск, Казахстан.

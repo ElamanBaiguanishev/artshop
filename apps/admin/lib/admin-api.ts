@@ -53,6 +53,27 @@ export const adminApi = {
 
   listProducts: () => request<import('@artshop/shared').AdminProductListItem[]>('/admin/products'),
 
+  // --- типы товаров ---
+  listCategories: () => request<import('@artshop/shared').AdminCategory[]>('/admin/categories'),
+
+  createCategory: (dto: import('@artshop/shared').CreateCategoryRequest) =>
+    request<{ id: string }>('/admin/categories', { method: 'POST', body: JSON.stringify(dto) }),
+
+  updateCategory: (id: string, dto: import('@artshop/shared').UpdateCategoryRequest) =>
+    request<{ id: string }>(`/admin/categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(dto),
+    }),
+
+  reassignCategory: (id: string, toCategoryId: string) =>
+    request<{ moved: number }>(`/admin/categories/${id}/reassign`, {
+      method: 'POST',
+      body: JSON.stringify({ toCategoryId }),
+    }),
+
+  deleteCategory: (id: string) =>
+    request<{ ok: boolean }>(`/admin/categories/${id}`, { method: 'DELETE' }),
+
   getProduct: (id: string) =>
     request<import('@artshop/shared').AdminProductDetail>(`/admin/products/${id}`),
 
